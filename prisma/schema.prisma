@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model activity_logs {
+  id          String   @id
+  user_id     String
+  action      String
+  entity_type String
+  entity_id   String?
+  details     Json?
+  ip_address  String?
+  created_at  DateTime @default(now())
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model announcements {
+  id                 String     @id
+  title              String
+  content            String
+  priority           Priority   @default(medium)
+  target_roles       UserRole[]
+  target_departments String[]
+  is_active          Boolean    @default(true)
+  published_at       DateTime?
+  expires_at         DateTime?
+  created_by         String
+  created_at         DateTime   @default(now())
+  updated_at         DateTime
+  users              users      @relation(fields: [created_by], references: [id])
+}
+
+model attendances {
+  id          String           @id
+  employee_id String
+  date        DateTime         @db.Date
+  check_in    DateTime?
+  check_out   DateTime?
+  status      AttendanceStatus
+  work_hours  Float?
+  notes       String?
+  created_at  DateTime         @default(now())
+  updated_at  DateTime
+  employees   employees        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, date])
+}
+
+model company_financials {
+  id                   String   @id
+  month                Int
+  year                 Int
+  total_revenue        Float
+  total_expenses       Float
+  salary_expenses      Float
+  operational_expenses Float
+  marketing_expenses   Float
+  other_expenses       Float
+  net_profit           Float
+  notes                String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime
+
+  @@unique([month, year])
+}
+
+model departments {
+  id                                             String      @id
+  name                                           String      @unique
+  description                                    String?
+  head_id                                        String?     @unique
+  created_at                                     DateTime    @default(now())
+  updated_at                                     DateTime
+  employees_departments_head_idToemployees       employees?  @relation("departments_head_idToemployees", fields: [head_id], references: [id])
+  employees_employees_department_idTodepartments employees[] @relation("employees_department_idTodepartments")
+}
+
+model employees {
+  id                                               String         @id
+  user_id                                          String         @unique
+  employee_id                                      String         @unique
+  department_id                                    String
+  designation                                      String
+  employment_type                                  EmploymentType
+  date_of_joining                                  DateTime
+  date_of_birth                                    DateTime?
+  phone                                            String?
+  address                                          String?
+  emergency_contact                                String?
+  bank_account                                     String?
+  bank_name                                        String?
+  pan_number                                       String?
+  aadhar_number                                    String?
+  basic_salary                                     Float
+  created_at                                       DateTime       @default(now())
+  updated_at                                       DateTime
+  attendances                                      attendances[]
+  departments_departments_head_idToemployees       departments?   @relation("departments_head_idToemployees")
+  departments_employees_department_idTodepartments departments    @relation("employees_department_idTodepartments", fields: [department_id], references: [id])
+  users                                            users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  leaves                                           leaves[]
+  salaries                                         salaries[]
+}
+
+model leaves {
+  id               String      @id
+  employee_id      String
+  leave_type       LeaveType
+  start_date       DateTime    @db.Date
+  end_date         DateTime    @db.Date
+  total_days       Int
+  reason           String
+  status           LeaveStatus @default(pending)
+  approved_by      String?
+  approved_at      DateTime?
+  rejection_reason String?
+  created_at       DateTime    @default(now())
+  updated_at       DateTime
+  users            users?      @relation(fields: [approved_by], references: [id])
+  employees        employees   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+}
+
+model salaries {
+  id               String        @id
+  employee_id      String
+  month            Int
+  year             Int
+  basic_salary     Float
+  hra              Float
+  da               Float
+  ta               Float
+  medical          Float
+  other_allowances Float
+  pf_deduction     Float
+  tax_deduction    Float
+  other_deductions Float
+  gross_salary     Float
+  net_salary       Float
+  payment_status   PaymentStatus @default(pending)
+  payment_date     DateTime?
+  created_at       DateTime      @default(now())
+  updated_at       DateTime
+  employees        employees     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, month, year])
+}
+
+model users {
+  id            String          @id
+  email         String          @unique
+  password      String
+  full_name     String
+  role          UserRole        @default(employee)
+  avatar_url    String?
+  status        UserStatus      @default(active)
+  created_at    DateTime        @default(now())
+  updated_at    DateTime
+  activity_logs activity_logs[]
+  announcements announcements[]
+  employees     employees?
+  leaves        leaves[]
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  half_day
+  on_leave
+}
+
+enum EmploymentType {
+  full_time
+  part_time
+  contract
+  intern
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum LeaveType {
+  annual
+  sick
+  personal
+  maternity
+  paternity
+  unpaid
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  hold
+}
+
+enum Priority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum UserRole {
+  super_admin
+  hr
+  employee
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
