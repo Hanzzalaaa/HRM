@@ -1,7 +1,10 @@
+"use client"
+
+import { useState } from "react"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, FileText, Users, DollarSign, Calendar } from "lucide-react"
+import { Download, FileText, Users, DollarSign, Calendar, Loader2 } from "lucide-react"
 
 const reports = [
   {
@@ -9,28 +12,56 @@ const reports = [
     description: "Complete list of all employees with their details",
     icon: Users,
     color: "bg-blue-100 text-blue-600",
+    type: "employees",
   },
   {
     title: "Attendance Report",
     description: "Monthly attendance summary for all employees",
     icon: Calendar,
     color: "bg-emerald-100 text-emerald-600",
+    type: "attendance",
   },
   {
     title: "Payroll Report",
     description: "Detailed salary and payment information",
     icon: DollarSign,
     color: "bg-amber-100 text-amber-600",
+    type: "payroll",
   },
   {
     title: "Leave Report",
     description: "Leave statistics and balance summary",
     icon: FileText,
     color: "bg-purple-100 text-purple-600",
+    type: "leaves",
   },
 ]
 
 export default function HRReportsPage() {
+  const [loadingType, setLoadingType] = useState<string | null>(null)
+
+  const handleDownload = async (type: string, title: string) => {
+    setLoadingType(type)
+    try {
+      const res = await fetch(`/api/reports/${type}`)
+      if (!res.ok) throw new Error("Failed")
+      
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${title.replace(/ /g, "_")}_${new Date().toISOString().split("T")[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      alert("Failed to download report")
+    } finally {
+      setLoadingType(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Reports" description="Generate and download various reports" />
@@ -50,9 +81,18 @@ export default function HRReportsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full bg-transparent">
-                <Download className="mr-2 h-4 w-4" />
-                Download Report
+              <Button
+                variant="outline"
+                className="w-full bg-transparent"
+                onClick={() => handleDownload(report.type, report.title)}
+                disabled={loadingType === report.type}
+              >
+                {loadingType === report.type ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {loadingType === report.type ? "Downloading..." : "Download Report"}
               </Button>
             </CardContent>
           </Card>
