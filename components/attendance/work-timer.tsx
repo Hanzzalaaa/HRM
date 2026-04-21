@@ -4,114 +4,84 @@ import { useEffect, useState } from "react"
 import { Timer, Clock } from "lucide-react"
 
 interface WorkTimerProps {
-  checkInTime: string // ISO string or time string
+  checkInTime: string
   checkOutTime?: string
+  shiftHours?: number
 }
 
-export function WorkTimer({ checkInTime, checkOutTime }: WorkTimerProps) {
+export function WorkTimer({ checkInTime, checkOutTime, shiftHours = 9 }: WorkTimerProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [isActive, setIsActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const SHIFT_SECONDS = shiftHours * 3600
+
   useEffect(() => {
-    console.log('WorkTimer mounted with:', { checkInTime, checkOutTime })
-    
-    // Parse check-in time
-    let checkInDate: Date
-    
-    try {
-      // Always try parsing as Date first (handles ISO strings and Date objects)
-      checkInDate = new Date(checkInTime)
-      
-      // Check if date is valid
-      if (isNaN(checkInDate.getTime())) {
-        console.error('Invalid date:', checkInTime)
-        setError('Invalid check-in time')
-        return
-      }
-      
-      console.log('Parsed check-in date:', checkInDate.toLocaleString())
-    } catch (err) {
-      console.error('Error parsing check-in time:', err)
-      setError('Failed to parse check-in time')
+    setError(null)
+
+    if (!checkInTime) {
+      setError('No check-in time')
       return
     }
 
-    // If checked out, calculate final time
+    const checkInDate = new Date(checkInTime)
+    if (isNaN(checkInDate.getTime())) {
+      setError('Invalid check-in time')
+      return
+    }
+
     if (checkOutTime) {
-      let checkOutDate: Date
-      try {
-        checkOutDate = new Date(checkOutTime)
-        if (isNaN(checkOutDate.getTime())) {
-          console.error('Invalid checkout date:', checkOutTime)
-          return
-        }
-      } catch (err) {
-        console.error('Error parsing checkout time:', err)
-        return
-      }
-      
+      const checkOutDate = new Date(checkOutTime)
+      if (isNaN(checkOutDate.getTime())) return
       const diffMs = checkOutDate.getTime() - checkInDate.getTime()
-      const totalSeconds = Math.floor(diffMs / 1000)
-      console.log('Checked out - total seconds:', totalSeconds)
-      setElapsedSeconds(totalSeconds)
+      setElapsedSeconds(Math.max(0, Math.floor(diffMs / 1000)))
       setIsActive(false)
       return
     }
 
-    // Active timer - update every second
     setIsActive(true)
-    console.log('Starting active timer')
-    
+
     const updateTimer = () => {
       const now = new Date()
       const diffMs = now.getTime() - checkInDate.getTime()
-      const seconds = Math.floor(diffMs / 1000)
-      setElapsedSeconds(seconds)
+      setElapsedSeconds(Math.max(0, Math.floor(diffMs / 1000)))
     }
 
-    updateTimer() // Initial update
+    updateTimer()
     const interval = setInterval(updateTimer, 1000)
-
-    return () => {
-      console.log('WorkTimer unmounting, clearing interval')
-      clearInterval(interval)
-    }
+    return () => clearInterval(interval)
   }, [checkInTime, checkOutTime])
 
   if (error) {
     return (
-      <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-red-600">{error}</p>
-        <p className="text-xs text-red-500 mt-2">Check-in time: {checkInTime}</p>
+      <div className="rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/20 p-6 text-center">
+        <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+        <p className="text-sm text-muted-foreground">Timer unavailable</p>
       </div>
     )
   }
 
-  const hours = Math.floor(elapsedSeconds / 3600)
-  const minutes = Math.floor((elapsedSeconds % 3600) / 60)
-  const seconds = elapsedSeconds % 60
+  const remainingSeconds = Math.max(SHIFT_SECONDS - elapsedSeconds, 0)
+  const isShiftComplete = elapsedSeconds >= SHIFT_SECONDS
 
-  // Calculate shift progress (9 hours = 32400 seconds)
-  const shiftDurationSeconds = 9 * 3600
-  const progressPercentage = Math.min((elapsedSeconds / shiftDurationSeconds) * 100, 100)
-  const remainingSeconds = Math.max(shiftDurationSeconds - elapsedSeconds, 0)
-  const remainingHours = Math.floor(remainingSeconds / 3600)
-  const remainingMinutes = Math.floor((remainingSeconds % 3600) / 60)
-  const isShiftComplete = elapsedSeconds >= shiftDurationSeconds
+  const displaySeconds = checkOutTime ? elapsedSeconds : remainingSeconds
+  const hours = Math.floor(displaySeconds / 3600)
+  const minutes = Math.floor((displaySeconds % 3600) / 60)
+  const seconds = displaySeconds % 60
+
+  const progressPercentage = Math.min((elapsedSeconds / SHIFT_SECONDS) * 100, 100)
 
   return (
     <div className="relative overflow-hidden rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-6">
-      {/* Animated background for active timer */}
-      {isActive && (
+      {isActive && !isShiftComplete && (
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 animate-pulse" />
       )}
-      
+
       <div className="relative z-10 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`rounded-full p-3 ${isActive ? 'bg-primary animate-pulse' : 'bg-primary/80'}`}>
-              {isActive ? (
+            <div className={`rounded-full p-3 ${isActive && !isShiftComplete ? 'bg-primary animate-pulse' : 'bg-primary/80'}`}>
+              {isActive && !isShiftComplete ? (
                 <Timer className="h-6 w-6 text-primary-foreground" />
               ) : (
                 <Clock className="h-6 w-6 text-primary-foreground" />
@@ -119,7 +89,11 @@ export function WorkTimer({ checkInTime, checkOutTime }: WorkTimerProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">
-                {isActive ? '⏱️ Working Time' : '✅ Total Work Time'}
+                {checkOutTime 
+                  ? '✅ Total Work Time' 
+                  : isShiftComplete 
+                    ? '✅ Shift Complete!' 
+                    : '⏱️ Time Remaining'}
               </p>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-4xl font-bold text-primary tabular-nums">
@@ -135,14 +109,17 @@ export function WorkTimer({ checkInTime, checkOutTime }: WorkTimerProps) {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {hours > 0 && `${hours} hour${hours !== 1 ? 's' : ''} `}
-                {minutes} minute{minutes !== 1 ? 's' : ''} 
-                {!checkOutTime && ' and counting...'}
+                {checkOutTime
+                  ? `Worked ${Math.floor(elapsedSeconds / 3600)}h ${Math.floor((elapsedSeconds % 3600) / 60)}m`
+                  : isShiftComplete
+                    ? `Overtime: +${Math.floor((elapsedSeconds - SHIFT_SECONDS) / 3600)}h ${Math.floor(((elapsedSeconds - SHIFT_SECONDS) % 3600) / 60)}m`
+                    : `${hours}h ${minutes}m remaining in shift`
+                }
               </p>
             </div>
           </div>
-          
-          {isActive && (
+
+          {isActive && !isShiftComplete && (
             <div className="flex flex-col items-center gap-1">
               <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-medium text-green-600">LIVE</span>
@@ -150,30 +127,22 @@ export function WorkTimer({ checkInTime, checkOutTime }: WorkTimerProps) {
           )}
         </div>
 
-        {/* Shift Progress Bar */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">
-              {isShiftComplete ? '✅ Shift Complete!' : `${isActive ? 'Shift Progress' : 'Shift Duration'}`}
-            </span>
+            <span className="text-muted-foreground">Shift Progress ({shiftHours}h)</span>
             <span className={`font-medium ${isShiftComplete ? 'text-green-600' : 'text-muted-foreground'}`}>
-              {isShiftComplete 
-                ? `+${hours - 9}h ${minutes}m overtime` 
-                : isActive 
-                  ? `${remainingHours}h ${remainingMinutes}m remaining`
-                  : `${progressPercentage.toFixed(0)}% of 9h shift`
-              }
+              {progressPercentage.toFixed(0)}%
             </span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full transition-all duration-1000 ${
-                isShiftComplete 
-                  ? 'bg-green-500' 
-                  : progressPercentage > 75 
-                    ? 'bg-blue-500' 
-                    : progressPercentage > 50 
-                      ? 'bg-primary' 
+                isShiftComplete
+                  ? 'bg-green-500'
+                  : progressPercentage > 75
+                    ? 'bg-blue-500'
+                    : progressPercentage > 50
+                      ? 'bg-primary'
                       : 'bg-primary/60'
               }`}
               style={{ width: `${progressPercentage}%` }}
@@ -184,4 +153,3 @@ export function WorkTimer({ checkInTime, checkOutTime }: WorkTimerProps) {
     </div>
   )
 }
-

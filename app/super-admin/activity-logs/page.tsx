@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { formatDateTime, getInitials } from "@/lib/utils/helpers"
 
 export default async function ActivityLogsPage() {
-  const logsData = await prisma.activityLog.findMany({
+  const logsData = await prisma.activity_logs.findMany({
     include: {
-      user: {
+      users: {
         select: {
           full_name: true,
           email: true,
@@ -23,11 +23,9 @@ export default async function ActivityLogsPage() {
     take: 100
   })
 
-  // Transform to match component's expected structure
   const logs = logsData.map((log: any) => ({
     ...log,
     created_at: log.created_at.toISOString(),
-    users: log.user
   }))
 
   return (

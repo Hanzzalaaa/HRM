@@ -3,7 +3,7 @@ import { EmployeeForm } from "@/components/employees/employee-form"
 import { prisma } from "@/lib/prisma"
 
 export default async function NewEmployeePage() {
-  const departments = await prisma.department.findMany({
+  const departments = await prisma.departments.findMany({
     select: {
       id: true,
       name: true

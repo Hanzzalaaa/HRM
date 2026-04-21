@@ -8,7 +8,7 @@ async function testEmployeeIdGeneration() {
   try {
     // Test 1: Get latest employee
     console.log('1️⃣ Checking latest employee...')
-    const latestEmployee = await prisma.employee.findFirst({
+    const latestEmployee = await prisma.employees.findFirst({
       where: {
         employee_id: {
           startsWith: 'EMP'

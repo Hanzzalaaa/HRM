@@ -16,11 +16,11 @@ interface EmployeeViewPageProps {
 export default async function HREmployeeViewPage({ params }: EmployeeViewPageProps) {
   const { id } = await params
   
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.employees.findUnique({
     where: { id },
     include: {
-      user: true,
-      department: true
+      users: true,
+      departments_employees_department_idTodepartments: true
     }
   })
 
@@ -28,11 +28,13 @@ export default async function HREmployeeViewPage({ params }: EmployeeViewPagePro
     notFound()
   }
 
+  const dept = employee.departments_employees_department_idTodepartments
+
   return (
     <div className="space-y-6">
       <PageHeader 
-        title={employee.user.full_name}
-        description={`${employee.designation} - ${employee.department.name}`}
+        title={employee.users.full_name}
+        description={`${employee.designation} - ${dept.name}`}
         actions={
           <div className="flex gap-2">
             <Link href="/hr/employees">
@@ -43,7 +45,7 @@ export default async function HREmployeeViewPage({ params }: EmployeeViewPagePro
             </Link>
             <ChangePasswordDialog 
               employeeId={id} 
-              employeeName={employee.user.full_name} 
+              employeeName={employee.users.full_name} 
             />
             <Link href={`/hr/employees/${id}/edit`}>
               <Button>
@@ -67,11 +69,11 @@ export default async function HREmployeeViewPage({ params }: EmployeeViewPagePro
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Full Name</p>
-              <p className="font-medium">{employee.user.full_name}</p>
+              <p className="font-medium">{employee.users.full_name}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Email</p>
-              <p className="font-medium">{employee.user.email}</p>
+              <p className="font-medium">{employee.users.email}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Phone</p>
@@ -99,7 +101,7 @@ export default async function HREmployeeViewPage({ params }: EmployeeViewPagePro
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Department</p>
-              <p className="font-medium">{employee.department.name}</p>
+              <p className="font-medium">{dept.name}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Designation</p>
@@ -117,11 +119,11 @@ export default async function HREmployeeViewPage({ params }: EmployeeViewPagePro
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Role</p>
-              <p className="font-medium capitalize">{employee.user.role}</p>
+              <p className="font-medium capitalize">{employee.users.role}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
-              <p className="font-medium capitalize">{employee.user.status}</p>
+              <p className="font-medium capitalize">{employee.users.status}</p>
             </div>
           </CardContent>
         </Card>
@@ -135,7 +137,7 @@ export default async function HREmployeeViewPage({ params }: EmployeeViewPagePro
               <p className="text-sm text-muted-foreground">Basic Salary</p>
               <p className="font-medium">
                 {employee.basic_salary 
-                  ? `₹${employee.basic_salary.toLocaleString()}` 
+                  ? `PKR ${employee.basic_salary.toLocaleString()}` 
                   : "N/A"}
               </p>
             </div>

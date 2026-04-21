@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -41,13 +42,32 @@ interface EmployeeListProps {
 }
 
 export function EmployeeList({ employees, departments, basePath }: EmployeeListProps) {
+  const router = useRouter()
   const [search, setSearch] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const pageSize = 10
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/employees/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        alert("Failed to delete employee")
+      }
+    } catch (error) {
+      alert("Something went wrong")
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch =
@@ -66,7 +86,6 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -82,32 +101,18 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
                 className="pl-9"
               />
             </div>
-            <Select
-              value={departmentFilter}
-              onValueChange={(value) => {
-                setDepartmentFilter(value)
-                setCurrentPage(1)
-              }}
-            >
+            <Select value={departmentFilter} onValueChange={(value) => { setDepartmentFilter(value); setCurrentPage(1) }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="All Departments" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </SelectItem>
+                  <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value)
-                setCurrentPage(1)
-              }}
-            >
+            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1) }}>
               <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
@@ -122,7 +127,6 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
         </CardContent>
       </Card>
 
-      {/* Employee Table */}
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -201,9 +205,13 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
                             <Key className="mr-2 h-4 w-4" />
                             Change Password
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            disabled={deletingId === employee.id}
+                            onSelect={() => handleDelete(employee.id, employee.users.full_name)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {deletingId === employee.id ? "Deleting..." : "Delete"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -216,7 +224,6 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
         </CardContent>
       </Card>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -224,30 +231,17 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
             of {filteredEmployees.length} employees
           </p>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
+            <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
+            <span className="text-sm">Page {currentPage} of {totalPages}</span>
+            <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* Password Change Dialog */}
       {selectedEmployee && (
         <ChangePasswordDialog
           employeeId={selectedEmployee.id}

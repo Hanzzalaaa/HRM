@@ -8,12 +8,11 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { check_out, work_hours, status } = body
+    const { status } = body
 
-    // Get the attendance record to get the date
-    const existingRecord = await prisma.attendance.findUnique({
+    const existingRecord = await prisma.attendances.findUnique({
       where: { id },
-      select: { date: true }
+      select: { check_in: true }
     })
 
     if (!existingRecord) {
@@ -23,21 +22,33 @@ export async function PATCH(
       )
     }
 
-    const dateStr = existingRecord.date.toISOString().split('T')[0]
+    const now = new Date()
 
-    const updateData: any = { status }
-    
-    if (check_out) {
-      updateData.check_out = check_out
-    }
-    
-    if (work_hours !== undefined) {
-      updateData.work_hours = work_hours
+    // Calculate work hours from check_in to now
+    let workHours = 0
+    if (existingRecord.check_in) {
+      const diffMs = now.getTime() - existingRecord.check_in.getTime()
+      workHours = Math.round((diffMs / 3600000) * 100) / 100
     }
 
-    const attendance = await prisma.attendance.update({
+    // Determine status based on work hours
+    let finalStatus = status
+    if (workHours >= 8) {
+      finalStatus = "present"
+    } else if (workHours >= 4) {
+      finalStatus = "half_day"
+    } else {
+      finalStatus = existingRecord.check_in ? status : "absent"
+    }
+
+    const attendance = await prisma.attendances.update({
       where: { id },
-      data: updateData
+      data: {
+        check_out: now,
+        work_hours: workHours,
+        status: finalStatus,
+        updated_at: now
+      }
     })
 
     return NextResponse.json({ success: true, data: attendance })

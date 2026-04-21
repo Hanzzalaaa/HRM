@@ -11,10 +11,10 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 async function getEmployeeData(userId: string) {
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.employees.findUnique({
     where: { user_id: userId },
     include: {
-      department: {
+      departments_employees_department_idTodepartments: {
         select: { name: true }
       }
     }
@@ -28,7 +28,7 @@ async function getAttendanceStats(employeeId: string) {
   const currentYear = new Date().getFullYear()
   const startDate = new Date(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)
 
-  const attendance = await prisma.attendance.findMany({
+  const attendance = await prisma.attendances.findMany({
     where: {
       employee_id: employeeId,
       date: { gte: startDate }
@@ -50,7 +50,7 @@ async function getLeaveBalance(employeeId: string) {
   const currentYear = new Date().getFullYear()
   const startDate = new Date(`${currentYear}-01-01`)
 
-  const leaves = await prisma.leave.findMany({
+  const leaves = await prisma.leaves.findMany({
     where: {
       employee_id: employeeId,
       status: "approved",
@@ -76,7 +76,7 @@ async function getLeaveBalance(employeeId: string) {
 }
 
 async function getRecentLeaves(employeeId: string) {
-  const leaves = await prisma.leave.findMany({
+  const leaves = await prisma.leaves.findMany({
     where: { employee_id: employeeId },
     orderBy: { created_at: 'desc' },
     take: 5
@@ -90,7 +90,7 @@ async function getRecentLeaves(employeeId: string) {
 }
 
 async function getLatestSalary(employeeId: string) {
-  const salary = await prisma.salary.findFirst({
+  const salary = await prisma.salaries.findFirst({
     where: { employee_id: employeeId },
     orderBy: [
       { year: 'desc' },
@@ -102,7 +102,7 @@ async function getLatestSalary(employeeId: string) {
 }
 
 async function getAnnouncements() {
-  const announcements = await prisma.announcement.findMany({
+  const announcements = await prisma.announcements.findMany({
     where: {
       is_active: true,
       target_roles: { has: "employee" }
@@ -142,42 +142,16 @@ export default async function EmployeeDashboard() {
     <div className="space-y-6">
       <PageHeader
         title="My Dashboard"
-        description={`${employee.designation} • ${employee.department?.name}`}
+        description={`${employee.designation} • ${(employee as any).departments_employees_department_idTodepartments?.name}`}
       />
 
-      {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Days Present"
-          value={attendanceStats.present}
-          icon={CheckCircle}
-          description="This month"
-          className="border-l-4 border-l-emerald-500"
-        />
-        <StatCard
-          title="Days Absent"
-          value={attendanceStats.absent}
-          icon={XCircle}
-          description="This month"
-          className="border-l-4 border-l-red-500"
-        />
-        <StatCard
-          title="Leave Balance"
-          value={leaveBalance.annualRemaining}
-          icon={Calendar}
-          description={`${leaveBalance.annualUsed} used of ${leaveBalance.annualTotal}`}
-          className="border-l-4 border-l-blue-500"
-        />
-        <StatCard
-          title="Net Salary"
-          value={latestSalary ? formatCurrency(Number(latestSalary.net_salary)) : "N/A"}
-          icon={DollarSign}
-          description="Last month"
-          className="border-l-4 border-l-amber-500"
-        />
+        <StatCard title="Days Present" value={attendanceStats.present} icon={CheckCircle} description="This month" className="border-l-4 border-l-emerald-500" />
+        <StatCard title="Days Absent" value={attendanceStats.absent} icon={XCircle} description="This month" className="border-l-4 border-l-red-500" />
+        <StatCard title="Leave Balance" value={leaveBalance.annualRemaining} icon={Calendar} description={`${leaveBalance.annualUsed} used of ${leaveBalance.annualTotal}`} className="border-l-4 border-l-blue-500" />
+        <StatCard title="Net Salary" value={latestSalary ? formatCurrency(Number(latestSalary.net_salary)) : "N/A"} icon={DollarSign} description="Last month" className="border-l-4 border-l-amber-500" />
       </div>
 
-      {/* Announcements */}
       {announcements.length > 0 && (
         <Card>
           <CardHeader>
@@ -189,19 +163,8 @@ export default async function EmployeeDashboard() {
           <CardContent>
             <div className="space-y-4">
               {announcements.map((announcement: any) => (
-                <div
-                  key={announcement.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/50"
-                >
-                  <AlertCircle
-                    className={`h-5 w-5 mt-0.5 ${
-                      announcement.priority === "urgent"
-                        ? "text-red-500"
-                        : announcement.priority === "high"
-                          ? "text-orange-500"
-                          : "text-blue-500"
-                    }`}
-                  />
+                <div key={announcement.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+                  <AlertCircle className={`h-5 w-5 mt-0.5 ${announcement.priority === "urgent" ? "text-red-500" : announcement.priority === "high" ? "text-orange-500" : "text-blue-500"}`} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{announcement.title}</p>
@@ -220,7 +183,6 @@ export default async function EmployeeDashboard() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Leave Balance */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -235,35 +197,24 @@ export default async function EmployeeDashboard() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Annual Leave</span>
-                <span className="text-sm text-muted-foreground">
-                  {leaveBalance.annualRemaining} / {leaveBalance.annualTotal} days
-                </span>
+                <span className="text-sm text-muted-foreground">{leaveBalance.annualRemaining} / {leaveBalance.annualTotal} days</span>
               </div>
               <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all"
-                  style={{ width: `${(leaveBalance.annualRemaining / leaveBalance.annualTotal) * 100}%` }}
-                />
+                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(leaveBalance.annualRemaining / leaveBalance.annualTotal) * 100}%` }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Sick Leave</span>
-                <span className="text-sm text-muted-foreground">
-                  {leaveBalance.sickRemaining} / {leaveBalance.sickTotal} days
-                </span>
+                <span className="text-sm text-muted-foreground">{leaveBalance.sickRemaining} / {leaveBalance.sickTotal} days</span>
               </div>
               <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all"
-                  style={{ width: `${(leaveBalance.sickRemaining / leaveBalance.sickTotal) * 100}%` }}
-                />
+                <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${(leaveBalance.sickRemaining / leaveBalance.sickTotal) * 100}%` }} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Leave Requests */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -281,9 +232,7 @@ export default async function EmployeeDashboard() {
                   <div key={leave.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                     <div>
                       <p className="text-sm font-medium capitalize">{leave.leave_type.replace("_", " ")} Leave</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(leave.start_date)} - {formatDate(leave.end_date)} ({leave.total_days} days)
-                      </p>
+                      <p className="text-xs text-muted-foreground">{formatDate(leave.start_date)} - {formatDate(leave.end_date)} ({leave.total_days} days)</p>
                     </div>
                     <Badge className={getStatusColor(leave.status)}>{leave.status}</Badge>
                   </div>
@@ -294,7 +243,6 @@ export default async function EmployeeDashboard() {
         </Card>
       </div>
 
-      {/* Attendance This Month */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

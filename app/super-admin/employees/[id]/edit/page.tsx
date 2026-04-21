@@ -12,10 +12,10 @@ interface EmployeeEditPageProps {
 export default async function EmployeeEditPage({ params }: EmployeeEditPageProps) {
   const { id } = await params
   
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.employees.findUnique({
     where: { id },
     include: {
-      user: {
+      users: {
         select: {
           id: true,
           full_name: true,
@@ -27,7 +27,7 @@ export default async function EmployeeEditPage({ params }: EmployeeEditPageProps
           updated_at: true
         }
       },
-      department: {
+      departments_employees_department_idTodepartments: {
         select: {
           id: true,
           name: true,
@@ -44,7 +44,6 @@ export default async function EmployeeEditPage({ params }: EmployeeEditPageProps
     notFound()
   }
 
-  // Transform to match component's expected structure
   const formattedEmployee = {
     ...employee,
     date_of_joining: employee.date_of_joining.toISOString(),
@@ -57,21 +56,21 @@ export default async function EmployeeEditPage({ params }: EmployeeEditPageProps
     pan_number: employee.pan_number ?? undefined,
     aadhar_number: employee.aadhar_number ?? undefined,
     user: {
-      ...employee.user,
-      avatar_url: employee.user.avatar_url ?? undefined,
-      created_at: employee.user.created_at.toISOString(),
-      updated_at: employee.user.updated_at.toISOString()
+      ...employee.users,
+      avatar_url: employee.users.avatar_url ?? undefined,
+      created_at: employee.users.created_at.toISOString(),
+      updated_at: employee.users.updated_at.toISOString()
     },
     department: {
-      ...employee.department,
-      created_at: employee.department.created_at.toISOString(),
-      updated_at: employee.department.updated_at.toISOString(),
-      description: employee.department.description ?? undefined,
-      head_id: employee.department.head_id ?? undefined
+      ...employee.departments_employees_department_idTodepartments,
+      created_at: employee.departments_employees_department_idTodepartments.created_at.toISOString(),
+      updated_at: employee.departments_employees_department_idTodepartments.updated_at.toISOString(),
+      description: employee.departments_employees_department_idTodepartments.description ?? undefined,
+      head_id: employee.departments_employees_department_idTodepartments.head_id ?? undefined
     }
   }
 
-  const departments = await prisma.department.findMany({
+  const departments = await prisma.departments.findMany({
     select: {
       id: true,
       name: true
@@ -82,7 +81,7 @@ export default async function EmployeeEditPage({ params }: EmployeeEditPageProps
     <div className="space-y-6">
       <PageHeader 
         title="Edit Employee" 
-        description={`Update ${employee.user.full_name}'s profile and information`} 
+        description={`Update ${employee.users.full_name}'s profile and information`} 
       />
       <EmployeeForm 
         employee={formattedEmployee} 

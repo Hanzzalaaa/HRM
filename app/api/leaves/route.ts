@@ -14,15 +14,17 @@ export async function POST(request: Request) {
       status,
     } = body
 
-    const leave = await prisma.leave.create({
+    const leave = await prisma.leaves.create({
       data: {
+        id: crypto.randomUUID(),
         employee_id,
         leave_type,
         start_date: new Date(start_date),
         end_date: new Date(end_date),
         total_days,
         reason,
-        status: status || 'pending'
+        status: status || 'pending',
+        updated_at: new Date()
       }
     })
 

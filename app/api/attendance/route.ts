@@ -4,25 +4,31 @@ import { prisma } from "@/lib/prisma"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { employee_id, date, check_in, status } = body
+    const { employee_id, date, status } = body
 
-    // Use upsert to handle existing records
-    const attendance = await prisma.attendance.upsert({
+    const now = new Date()
+    const dateObj = new Date(date)
+    dateObj.setUTCHours(0, 0, 0, 0)
+
+    const attendance = await prisma.attendances.upsert({
       where: {
         employee_id_date: {
           employee_id,
-          date: new Date(date)
+          date: dateObj
         }
       },
       update: {
-        check_in,
-        status
+        check_in: now,
+        status,
+        updated_at: now
       },
       create: {
+        id: crypto.randomUUID(),
         employee_id,
-        date: new Date(date),
-        check_in,
-        status
+        date: dateObj,
+        check_in: now,
+        status,
+        updated_at: now
       }
     })
 

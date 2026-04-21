@@ -10,18 +10,8 @@ import { formatCurrency, getStatusColor } from "@/lib/utils/helpers"
 import { redirect } from "next/navigation"
 
 const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ]
 
 export default async function EmployeeSalaryPage() {
@@ -31,7 +21,7 @@ export default async function EmployeeSalaryPage() {
     redirect("/auth/login")
   }
 
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.employees.findUnique({
     where: { user_id: user.id },
     select: { 
       id: true, 
@@ -41,7 +31,7 @@ export default async function EmployeeSalaryPage() {
 
   if (!employee) return null
 
-  const salaries = await prisma.salary.findMany({
+  const salaries = await prisma.salaries.findMany({
     where: {
       employee_id: employee.id
     },
@@ -57,7 +47,6 @@ export default async function EmployeeSalaryPage() {
     <div className="space-y-6">
       <PageHeader title="My Salary" description="View your salary details and payment history" />
 
-      {/* Current Salary Summary */}
       {latestSalary && (
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="border-l-4 border-l-blue-500">
@@ -88,8 +77,8 @@ export default async function EmployeeSalaryPage() {
                 <div className="text-2xl font-bold">
                   {formatCurrency(
                     Number(latestSalary.pf_deduction || 0) +
-                      Number(latestSalary.tax_deduction || 0) +
-                      Number(latestSalary.other_deductions || 0),
+                    Number(latestSalary.tax_deduction || 0) +
+                    Number(latestSalary.other_deductions || 0),
                   )}
                 </div>
                 <TrendingDown className="h-4 w-4 text-red-500" />
@@ -107,7 +96,6 @@ export default async function EmployeeSalaryPage() {
         </div>
       )}
 
-      {/* Latest Payslip Details */}
       {latestSalary && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -125,7 +113,6 @@ export default async function EmployeeSalaryPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Earnings */}
               <div>
                 <h4 className="font-semibold mb-4 text-emerald-600">Earnings</h4>
                 <div className="space-y-3">
@@ -160,7 +147,6 @@ export default async function EmployeeSalaryPage() {
                 </div>
               </div>
 
-              {/* Deductions */}
               <div>
                 <h4 className="font-semibold mb-4 text-red-600">Deductions</h4>
                 <div className="space-y-3">
@@ -181,8 +167,8 @@ export default async function EmployeeSalaryPage() {
                     <span>
                       {formatCurrency(
                         Number(latestSalary.pf_deduction || 0) +
-                          Number(latestSalary.tax_deduction || 0) +
-                          Number(latestSalary.other_deductions || 0),
+                        Number(latestSalary.tax_deduction || 0) +
+                        Number(latestSalary.other_deductions || 0),
                       )}
                     </span>
                   </div>
@@ -190,7 +176,6 @@ export default async function EmployeeSalaryPage() {
               </div>
             </div>
 
-            {/* Net Salary */}
             <div className="mt-6 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold">Net Salary</span>
@@ -201,7 +186,6 @@ export default async function EmployeeSalaryPage() {
         </Card>
       )}
 
-      {/* Payment History */}
       <Card>
         <CardHeader>
           <CardTitle>Payment History</CardTitle>
@@ -234,8 +218,7 @@ export default async function EmployeeSalaryPage() {
                     </TableCell>
                     <TableCell className="text-right">{formatCurrency(Number(salary.gross_salary))}</TableCell>
                     <TableCell className="text-right text-red-600">
-                      -
-                      {formatCurrency(
+                      -{formatCurrency(
                         Number(salary.pf_deduction || 0) + Number(salary.tax_deduction || 0) + Number(salary.other_deductions || 0),
                       )}
                     </TableCell>

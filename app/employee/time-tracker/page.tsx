@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/ui/page-header"
+import { EmployeeAttendanceView } from "@/components/attendance/employee-attendance-view"
+import { redirect } from "next/navigation"
 
 export default async function TimeTrackerPage() {
   const user = await getCurrentUser()
@@ -8,6 +11,48 @@ export default async function TimeTrackerPage() {
     redirect("/auth/login")
   }
 
-  // Redirect to attendance page as time tracking is handled there
-  redirect("/employee/attendance")
+  const employee = await prisma.employees.findUnique({
+    where: { user_id: user.id },
+    select: { id: true, employment_type: true }
+  })
+
+  if (!employee) return null
+
+  const now = new Date()
+  const localDate = new Date(now.getTime() + (5 * 60 * 60 * 1000))
+  const currentMonth = localDate.getUTCMonth() + 1
+  const currentYear = localDate.getUTCFullYear()
+  const startDate = new Date(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)
+
+  const attendance = await prisma.attendances.findMany({
+    where: {
+      employee_id: employee.id,
+      date: { gte: startDate }
+    },
+    orderBy: { date: 'desc' }
+  })
+
+  const formattedAttendance = attendance.map((record: any) => ({
+    ...record,
+    date: record.date.toISOString(),
+    check_in: record.check_in?.toISOString() ?? undefined,
+    check_out: record.check_out?.toISOString() ?? undefined,
+    work_hours: record.work_hours ?? undefined,
+    notes: record.notes ?? undefined,
+    created_at: record.created_at.toISOString(),
+    updated_at: record.updated_at.toISOString()
+  }))
+
+  const shiftHours = employee.employment_type === "part_time" ? 4 : 9
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Time Tracker" description="Track your daily work hours" />
+      <EmployeeAttendanceView 
+        attendance={formattedAttendance} 
+        employeeId={employee.id}
+        shiftHours={shiftHours}
+      />
+    </div>
+  )
 }

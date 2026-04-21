@@ -3,35 +3,31 @@ import { PageHeader } from "@/components/ui/page-header"
 import { LeavesList } from "@/components/leaves/leaves-list"
 
 export default async function HRLeavesPage() {
-  const leavesData = await prisma.leave.findMany({
-    include: {
-      employee: {
-        select: {
-          employee_id: true,
-          user: {
-            select: {
-              full_name: true,
-              avatar_url: true
-            }
-          },
-          department: {
-            select: {
-              name: true
-            }
+ const leavesData = await prisma.leaves.findMany({
+  include: {
+    employees: {
+      select: {
+        employee_id: true,
+
+        users: {
+          select: {
+            full_name: true,
+            avatar_url: true
+          }
+        },
+
+        departments_employees_department_idTodepartments: {
+          select: {
+            name: true
           }
         }
-      },
-      approver: {
-        select: {
-          full_name: true
-        }
       }
-    },
-    orderBy: {
-      created_at: 'desc'
     }
-  })
-
+  },
+  orderBy: {
+    created_at: "desc"
+  }
+})
   // Transform to match component's expected structure
   const leaves = leavesData.map((leave: any) => ({
     ...leave,

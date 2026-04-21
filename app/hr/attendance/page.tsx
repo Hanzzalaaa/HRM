@@ -10,7 +10,7 @@ export default async function HRAttendancePage() {
   const user = await getCurrentUser()
   
   // Get HR's own employee record
-  const hrEmployee = user ? await prisma.employee.findUnique({
+  const hrEmployee = user ? await prisma.employees.findUnique({
     where: { user_id: user.id },
     select: { id: true }
   }) : null
@@ -22,7 +22,7 @@ export default async function HRAttendancePage() {
     const currentYear = new Date().getFullYear()
     const startDate = new Date(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)
 
-    const attendance = await prisma.attendance.findMany({
+    const attendance = await prisma.attendances.findMany({
       where: {
         employee_id: hrEmployee.id,
         date: {
@@ -49,22 +49,22 @@ export default async function HRAttendancePage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const attendanceData = await prisma.attendance.findMany({
+  const attendanceData = await prisma.attendances.findMany({
     where: {
       date: today
     },
     include: {
-      employee: {
+      employees: {
         select: {
           employee_id: true,
           designation: true,
-          user: {
+          users: {   // ✅ FIX
             select: {
               full_name: true,
               avatar_url: true
             }
           },
-          department: {
+          departments_employees_department_idTodepartments: { // ✅ FIX
             select: {
               name: true
             }
@@ -77,16 +77,16 @@ export default async function HRAttendancePage() {
     }
   })
 
-  const employeesData = await prisma.employee.findMany({
+  const employeesData = await prisma.employees.findMany({
     where: {
-      user: {
+      users: {
         status: 'active'
       }
     },
     select: {
       id: true,
       employee_id: true,
-      user: {
+      users: {
         select: {
           full_name: true,
           status: true
@@ -106,41 +106,27 @@ export default async function HRAttendancePage() {
     created_at: att.created_at.toISOString(),
     updated_at: att.updated_at.toISOString(),
     employees: {
-      employee_id: att.employee.employee_id,
-      designation: att.employee.designation,
+      employee_id: att.employees.employee_id,   // ✅ FIX
+      designation: att.employees.designation,   // ✅ FIX
       users: {
-        full_name: att.employee.user.full_name,
-        avatar_url: att.employee.user.avatar_url ?? undefined
+        full_name: att.employees.users.full_name,   // ✅ FIX
+        avatar_url: att.employees.users.avatar_url ?? undefined
       },
-      departments: att.employee.department
+      departments: att.employees
+        .departments_employees_department_idTodepartments // ✅ FIX
     }
   }))
 
   const employees = employeesData.map((emp: any) => ({
     ...emp,
-    users: emp.user
+    users: emp.users   // ✅ FIX
   }))
 
   return (
     <div className="space-y-6">
       <PageHeader title="Attendance" description="Track and manage daily attendance" />
 
-      {/* HR's Personal Attendance */}
-      {hrEmployee && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>My Attendance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EmployeeAttendanceView attendance={hrAttendance} employeeId={hrEmployee.id} />
-            </CardContent>
-          </Card>
-          
-          <Separator className="my-6" />
-        </>
-      )}
-
+  
       {/* All Employees Attendance */}
       <Card>
         <CardHeader>

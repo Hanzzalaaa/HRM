@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,6 +35,28 @@ const priorityIcons = {
 }
 
 export function AnnouncementsList({ announcements, isAdmin = false }: AnnouncementsListProps) {
+  const router = useRouter()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this announcement?")) return
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/announcements/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Delete failed:", error)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const handleEdit = (id: string) => {
+    router.push(`/super-admin/announcements/${id}/edit`)
+  }
+
   return (
     <div className="space-y-4">
       {announcements.length === 0 ? (
@@ -79,13 +103,17 @@ export function AnnouncementsList({ announcements, isAdmin = false }: Announceme
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(announcement.id)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDelete(announcement.id)}
+                          disabled={deletingId === announcement.id}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {deletingId === announcement.id ? "Deleting..." : "Delete"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
