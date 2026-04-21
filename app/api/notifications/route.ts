@@ -1,33 +1,32 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getCurrentUser } from "@/lib/auth"
+import { cookies } from "next/headers"
 
 export async function GET() {
   try {
-    const user = await getCurrentUser()
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: userId }
+    })
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const notifications: any[] = []
-
-    // Get recent announcements (last 7 days)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    const announcements = await prisma.announcement.findMany({
+    const announcements = await prisma.announcements.findMany({
       where: {
         is_active: true,
-        created_at: {
-          gte: sevenDaysAgo
-        },
-        target_roles: {
-          has: user.role
-        }
+        created_at: { gte: sevenDaysAgo },
       },
       select: {
         id: true,
@@ -35,9 +34,7 @@ export async function GET() {
         priority: true,
         created_at: true
       },
-      orderBy: {
-        created_at: 'desc'
-      },
+      orderBy: { created_at: 'desc' },
       take: 5
     })
 
@@ -53,26 +50,17 @@ export async function GET() {
       })
     })
 
-    // For HR and Super Admin: Get pending leave requests
     if (user.role === 'hr' || user.role === 'super_admin') {
-      const pendingLeaves = await prisma.leave.findMany({
-        where: {
-          status: 'pending'
-        },
+      const pendingLeaves = await prisma.leaves.findMany({
+        where: { status: 'pending' },
         include: {
-          employee: {
+          employees: {
             include: {
-              user: {
-                select: {
-                  full_name: true
-                }
-              }
+              users: { select: { full_name: true } }
             }
           }
         },
-        orderBy: {
-          created_at: 'desc'
-        },
+        orderBy: { created_at: 'desc' },
         take: 5
       })
 
@@ -81,7 +69,7 @@ export async function GET() {
           id: `leave-${leave.id}`,
           type: 'leave_request',
           title: 'Leave Request',
-          message: `${leave.employee.user.full_name} requested ${leave.leave_type} leave`,
+          message: `${leave.employees.users.full_name} requested ${leave.leave_type} leave`,
           priority: 'medium',
           created_at: leave.created_at.toISOString(),
           link: user.role === 'super_admin' ? '/super-admin/leaves' : '/hr/leaves'
@@ -89,27 +77,20 @@ export async function GET() {
       })
     }
 
-    // For employees: Get their leave request status updates
     if (user.role === 'employee') {
-      const employee = await prisma.employee.findUnique({
+      const employee = await prisma.employees.findUnique({
         where: { user_id: user.id },
         select: { id: true }
       })
 
       if (employee) {
-        const recentLeaves = await prisma.leave.findMany({
+        const recentLeaves = await prisma.leaves.findMany({
           where: {
             employee_id: employee.id,
-            status: {
-              in: ['approved', 'rejected']
-            },
-            updated_at: {
-              gte: sevenDaysAgo
-            }
+            status: { in: ['approved', 'rejected'] },
+            updated_at: { gte: sevenDaysAgo }
           },
-          orderBy: {
-            updated_at: 'desc'
-          },
+          orderBy: { updated_at: 'desc' },
           take: 5
         })
 
@@ -127,15 +108,14 @@ export async function GET() {
       }
     }
 
-    // Sort by date
-    notifications.sort((a, b) => 
+    notifications.sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
 
-    return NextResponse.json({ 
-      success: true, 
-      data: notifications.slice(0, 10), // Return max 10 notifications
-      count: notifications.length 
+    return NextResponse.json({
+      success: true,
+      data: notifications.slice(0, 10),
+      count: notifications.length
     })
   } catch (error) {
     console.error("Error fetching notifications:", error)

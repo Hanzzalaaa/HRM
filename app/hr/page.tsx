@@ -12,20 +12,20 @@ async function getHRDashboardData() {
   today.setHours(0, 0, 0, 0)
 
   const [totalEmployees, activeEmployees, pendingLeaves, todayAttendance] = await Promise.all([
-    prisma.employee.count(),
-    prisma.employee.count({
+    prisma.employees.count(),
+    prisma.employees.count({
       where: {
-        user: {
+        users: {
           status: 'active'
         }
       }
     }),
-    prisma.leave.count({
+    prisma.leaves.count({
       where: {
         status: 'pending'
       }
     }),
-    prisma.attendance.count({
+    prisma.attendances.count({
       where: {
         date: today,
         status: 'present'
@@ -42,15 +42,15 @@ async function getHRDashboardData() {
 }
 
 async function getPendingLeaves() {
-  const leaves = await prisma.leave.findMany({
+  const leaves = await prisma.leaves.findMany({
     where: {
       status: 'pending'
     },
     include: {
-      employee: {
+      employees: {
         select: {
           employee_id: true,
-          user: {
+          users: {
             select: {
               full_name: true
             }
@@ -69,8 +69,8 @@ async function getPendingLeaves() {
     start_date: leave.start_date.toISOString(),
     end_date: leave.end_date.toISOString(),
     employees: {
-      employee_id: leave.employee.employee_id,
-      users: leave.employee.user
+      employee_id: leave.employees.employee_id,
+      users: leave.employees.users
     }
   }))
 }
@@ -79,8 +79,7 @@ async function getTodayAbsentees() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Get employees who attended today
-  const attendance = await prisma.attendance.findMany({
+  const attendance = await prisma.attendances.findMany({
     where: {
       date: today,
       status: {
@@ -94,26 +93,25 @@ async function getTodayAbsentees() {
 
   const attendedEmployeeIds = attendance.map((a: any) => a.employee_id)
 
-  // Get active employees who didn't attend
-  const absentees = await prisma.employee.findMany({
+  const absentees = await prisma.employees.findMany({
     where: {
       id: {
         notIn: attendedEmployeeIds
       },
-      user: {
+      users: {
         status: 'active'
       }
     },
     select: {
       id: true,
       employee_id: true,
-      user: {
+      users: {
         select: {
           full_name: true,
           status: true
         }
       },
-      department: {
+      departments_employees_department_idTodepartments: {
         select: {
           name: true
         }
@@ -124,8 +122,8 @@ async function getTodayAbsentees() {
 
   return absentees.map((emp: any) => ({
     ...emp,
-    users: emp.user,
-    departments: emp.department
+    users: emp.users,
+    departments: emp.departments_employees_department_idTodepartments
   }))
 }
 
@@ -140,27 +138,14 @@ export default async function HRDashboard() {
     <div className="space-y-6">
       <PageHeader title="HR Dashboard" description="Manage employees, attendance, and leave requests" />
 
-      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Employees" value={stats.totalEmployees} icon={Users} description="Active workforce" />
-        <StatCard
-          title="Active Employees"
-          value={stats.activeEmployees}
-          icon={UserCheck}
-          description="Currently active"
-        />
-        <StatCard
-          title="Today's Attendance"
-          value={`${stats.todayAttendance}/${stats.activeEmployees}`}
-          icon={Clock}
-          description="Present today"
-        />
+        <StatCard title="Active Employees" value={stats.activeEmployees} icon={UserCheck} description="Currently active" />
+        <StatCard title="Today's Attendance" value={`${stats.todayAttendance}/${stats.activeEmployees}`} icon={Clock} description="Present today" />
         <StatCard title="Pending Leaves" value={stats.pendingLeaves} icon={Calendar} description="Awaiting approval" />
       </div>
 
-      {/* Pending Leaves and Absentees */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pending Leave Requests */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -201,7 +186,6 @@ export default async function HRDashboard() {
           </CardContent>
         </Card>
 
-        {/* Today's Absentees */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

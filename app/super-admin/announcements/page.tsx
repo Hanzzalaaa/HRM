@@ -3,30 +3,36 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { AnnouncementsList } from "@/components/announcements/announcements-list"
+import Link from "next/link"
 
 export default async function AnnouncementsPage() {
-  const announcementsData = await prisma.announcement.findMany({
-    include: {
-      author: {
-        select: {
-          full_name: true
-        }
-      }
-    },
-    orderBy: {
-      created_at: 'desc'
-    }
-  })
+  let announcements: any[] = []
 
-  // Transform to match component's expected structure
-  const announcements = announcementsData.map((announcement: any) => ({
-    ...announcement,
-    created_at: announcement.created_at.toISOString(),
-    updated_at: announcement.updated_at.toISOString(),
-    published_at: announcement.published_at?.toISOString() ?? undefined,
-    expires_at: announcement.expires_at?.toISOString() ?? undefined,
-    author: announcement.author
-  }))
+  try {
+    const data = await prisma.announcements.findMany({
+      include: {
+        users: {
+          select: {
+            full_name: true,
+          },
+        },
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    })
+
+    announcements = data.map((item: any) => ({
+      ...item,
+      created_at: item.created_at?.toISOString(),
+      updated_at: item.updated_at?.toISOString(),
+      published_at: item.published_at?.toISOString() ?? null,
+      expires_at: item.expires_at?.toISOString() ?? null,
+      author: item.users,
+    }))
+  } catch (err) {
+    console.error("DB Error:", err)
+  }
 
   return (
     <div className="space-y-6">
@@ -34,10 +40,12 @@ export default async function AnnouncementsPage() {
         title="Announcements"
         description="Manage company-wide announcements"
         actions={
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Announcement
-          </Button>
+          <Link href="/super-admin/announcements/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Announcement
+            </Button>
+          </Link>
         }
       />
 

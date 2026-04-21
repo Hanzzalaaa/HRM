@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DollarSign, Download, Eye } from "lucide-react"
+import { DollarSign, Download, Eye, Loader2, Plus } from "lucide-react"
 import { formatCurrency, getInitials, getStatusColor } from "@/lib/utils/helpers"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 interface SalaryRecord {
   id: string
@@ -32,23 +33,13 @@ interface PayrollListProps {
   year: number
 }
 
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-]
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 
 export function PayrollList({ salaries, month, year }: PayrollListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [generating, setGenerating] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const router = useRouter()
 
   const filteredSalaries = statusFilter === "all" ? salaries : salaries.filter((s) => s.payment_status === statusFilter)
 
@@ -56,6 +47,46 @@ export function PayrollList({ salaries, month, year }: PayrollListProps) {
     totalPayroll: salaries.reduce((sum, s) => sum + Number(s.net_salary), 0),
     paid: salaries.filter((s) => s.payment_status === "paid").length,
     pending: salaries.filter((s) => s.payment_status === "pending").length,
+  }
+
+  const handleGeneratePayroll = async () => {
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/payroll/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month, year })
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert(data.message)
+        router.refresh()
+      } else {
+        alert('Failed to generate payroll')
+      }
+    } catch {
+      alert('Something went wrong!')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleExportPayroll = async () => {
+    setExporting(true)
+    try {
+      const res = await fetch(`/api/payroll/export?month=${month}&year=${year}`)
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `payroll-${monthNames[month-1]}-${year}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      alert('Export failed!')
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -69,9 +100,7 @@ export function PayrollList({ salaries, month, year }: PayrollListProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats.totalPayroll)}</div>
-            <p className="text-xs text-muted-foreground">
-              {monthNames[month - 1]} {year}
-            </p>
+            <p className="text-xs text-muted-foreground">{monthNames[month - 1]} {year}</p>
           </CardContent>
         </Card>
         <Card>
@@ -107,10 +136,16 @@ export function PayrollList({ salaries, month, year }: PayrollListProps) {
             <SelectItem value="hold">On Hold</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export Payroll
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleGeneratePayroll} disabled={generating}>
+            {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            Generate Payroll
+          </Button>
+          <Button variant="outline" onClick={handleExportPayroll} disabled={exporting}>
+            {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Export Payroll
+          </Button>
+        </div>
       </div>
 
       {/* Payroll Table */}

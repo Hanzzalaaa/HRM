@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
+import { Users } from 'lucide-react'
 
 export async function getCurrentUser() {
   const cookieStore = await cookies()
@@ -8,12 +9,12 @@ export async function getCurrentUser() {
   
   if (!userId) return null
   
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: userId },
     include: {
-      employee: {
+      employees: {
         include: {
-          department: true
+          departments_employees_department_idTodepartments: true
         }
       }
     }
@@ -23,7 +24,7 @@ export async function getCurrentUser() {
 }
 
 export async function signIn(email: string, password: string) {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { email }
   })
   
@@ -37,7 +38,7 @@ export async function signIn(email: string, password: string) {
     throw new Error('Invalid credentials')
   }
   
-  return user
+  return Users
 }
 
 export async function signOut() {

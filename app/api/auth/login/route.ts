@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
-    // Ensure Prisma is connected
     try {
       await prisma.$connect()
     } catch (connectError) {
@@ -18,12 +17,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email },
       include: {
-        employee: {
+        employees: {
           include: {
-            department: true
+            departments_employees_department_idTodepartments: true
           }
         }
       }
@@ -48,14 +47,13 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 7
     })
 
     return NextResponse.json({ user })
   } catch (error: any) {
     console.error('Login error:', error)
     
-    // Check if it's a database connection error
     if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
       return NextResponse.json(
         { error: 'Database connection failed. Please check your internet connection and try again.' }, 

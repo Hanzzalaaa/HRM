@@ -11,7 +11,7 @@ async function main() {
   console.log('🔍 Checking if super admin already exists...')
 
   // Check if user already exists
-  const existingUser = await prisma.user.findUnique({
+  const existingUser = await prisma.users.findUnique({
     where: { email }
   })
 

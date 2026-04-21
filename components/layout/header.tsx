@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, LogOut, Settings, User } from "lucide-react"
+import { LogOut, Settings, User } from "lucide-react"
 import { getInitials, getRoleBadgeColor } from "@/lib/utils/helpers"
 import type { User as UserType } from "@/lib/types/database"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +40,12 @@ export function Header({ user }: HeaderProps) {
     employee: "Employee",
   }
 
+  const profilePath = user.role === "super_admin"
+    ? "/super-admin/settings"
+    : user.role === "hr"
+    ? "/hr/settings"
+    : "/employee/settings"
+
   return (
     <header className="h-16 border-b bg-card px-6 flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -51,7 +57,6 @@ export function Header({ user }: HeaderProps) {
 
       <div className="flex items-center gap-4">
         <ThemeToggle />
-        
         <NotificationsDropdown />
 
         <DropdownMenu>
@@ -71,11 +76,11 @@ export function Header({ user }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(profilePath)}>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(profilePath)}>
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>

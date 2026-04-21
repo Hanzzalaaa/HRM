@@ -89,6 +89,12 @@ const navItems: NavItem[] = [
     roles: ["super_admin", "hr", "employee"],
   },
   {
+    title: "Time Tracker",
+    href: "/time-tracker",
+    icon: Clock,
+    roles: ["employee"],
+  },
+  {
     title: "Reports",
     href: "/reports",
     icon: FileText,
@@ -99,12 +105,6 @@ const navItems: NavItem[] = [
     href: "/activity-logs",
     icon: ClipboardList,
     roles: ["super_admin"],
-  },
-  {
-    title: "Time Tracker",
-    href: "/time-tracker",
-    icon: Clock,
-    roles: ["employee"],
   },
   {
     title: "Settings",
@@ -158,7 +158,9 @@ export function Sidebar({ role, basePath }: SidebarProps) {
         <nav className="space-y-1 px-2">
           {filteredNavItems.map((item) => {
             const href = `${basePath}${item.href}`
-            const isActive = pathname === href || (item.href && pathname.startsWith(href))
+            const isActive = item.href === "" 
+              ? pathname === basePath 
+              : pathname === href || pathname.startsWith(`${href}/`)
 
             return (
               <Link

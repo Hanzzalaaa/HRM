@@ -3,25 +3,25 @@ import { PageHeader } from "@/components/ui/page-header"
 import { LeavesList } from "@/components/leaves/leaves-list"
 
 export default async function LeavesPage() {
-  const leavesData = await prisma.leave.findMany({
+  const leavesData = await prisma.leaves.findMany({
     include: {
-      employee: {
+      employees: {
         select: {
           employee_id: true,
-          user: {
+          users: {
             select: {
               full_name: true,
               avatar_url: true
             }
           },
-          department: {
+          departments_employees_department_idTodepartments: {
             select: {
               name: true
             }
           }
         }
       },
-      approver: {
+      users: {
         select: {
           full_name: true
         }
@@ -32,7 +32,6 @@ export default async function LeavesPage() {
     }
   })
 
-  // Transform to match component's expected structure
   const leaves = leavesData.map((leave: any) => ({
     ...leave,
     start_date: leave.start_date.toISOString(),
@@ -42,14 +41,14 @@ export default async function LeavesPage() {
     updated_at: leave.updated_at.toISOString(),
     rejection_reason: leave.rejection_reason ?? undefined,
     employees: {
-      employee_id: leave.employee.employee_id,
+      employee_id: leave.employees.employee_id,
       users: {
-        full_name: leave.employee.user.full_name,
-        avatar_url: leave.employee.user.avatar_url ?? undefined
+        full_name: leave.employees.users.full_name,
+        avatar_url: leave.employees.users.avatar_url ?? undefined
       },
-      departments: leave.employee.department
+      departments: leave.employees.departments_employees_department_idTodepartments
     },
-    approver: leave.approver ?? undefined
+    approver: leave.users ?? undefined
   }))
 
   return (

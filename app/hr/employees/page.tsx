@@ -6,9 +6,9 @@ import { EmployeeList } from "@/components/employees/employee-list"
 import Link from "next/link"
 
 export default async function HREmployeesPage() {
-  const employeesData = await prisma.employee.findMany({
+  const employeesData = await prisma.employees.findMany({
     include: {
-      user: {
+      users: {
         select: {
           id: true,
           full_name: true,
@@ -18,7 +18,7 @@ export default async function HREmployeesPage() {
           role: true
         }
       },
-      department: {
+      departments_employees_department_idTodepartments: {
         select: {
           id: true,
           name: true
@@ -30,7 +30,6 @@ export default async function HREmployeesPage() {
     }
   })
 
-  // Transform to match component's expected structure
   const employees = employeesData.map((emp: any) => ({
     ...emp,
     date_of_joining: emp.date_of_joining.toISOString(),
@@ -38,13 +37,13 @@ export default async function HREmployeesPage() {
     created_at: emp.created_at.toISOString(),
     updated_at: emp.updated_at.toISOString(),
     users: {
-      ...emp.user,
-      avatar_url: emp.user.avatar_url ?? undefined
+      ...emp.users,
+      avatar_url: emp.users.avatar_url ?? undefined
     },
-    departments: emp.department
+    departments: emp.departments_employees_department_idTodepartments
   }))
 
-  const departments = await prisma.department.findMany({
+  const departments = await prisma.departments.findMany({
     select: {
       id: true,
       name: true

@@ -22,9 +22,10 @@ interface AttendanceRecord {
 interface EmployeeAttendanceViewProps {
   attendance: AttendanceRecord[]
   employeeId: string
+  shiftHours?: number
 }
 
-export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAttendanceViewProps) {
+export function EmployeeAttendanceView({ attendance, employeeId, shiftHours = 9 }: EmployeeAttendanceViewProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -34,25 +35,16 @@ export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAtten
     return recordDate === today
   })
 
-  console.log('EmployeeAttendanceView:', {
-    today,
-    todayRecord,
-    attendanceCount: attendance.length,
-    firstRecord: attendance[0]
-  })
-
   const handleCheckIn = async () => {
     setLoading(true)
     try {
       const now = new Date()
       const timeString = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`
-      const isLate = now.getHours() >= 10 // Consider late if after 10 AM
+      const isLate = now.getHours() >= 10
 
       await fetch('/api/attendance', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           employee_id: employeeId,
           date: today,
@@ -75,24 +67,22 @@ export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAtten
       const now = new Date()
       const timeString = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`
 
-      // Calculate work hours
       let workHours = 0
       if (todayRecord.check_in) {
-        const [inHours, inMinutes] = todayRecord.check_in.split(":").map(Number)
-        const inTime = inHours * 60 + inMinutes
-        const outTime = now.getHours() * 60 + now.getMinutes()
-        workHours = Math.round(((outTime - inTime) / 60) * 100) / 100
+        const checkInDate = new Date(todayRecord.check_in)
+        const diffMs = now.getTime() - checkInDate.getTime()
+        workHours = Math.round((diffMs / 3600000) * 100) / 100
       }
+
+      const halfDayThreshold = shiftHours / 2
 
       await fetch(`/api/attendance/${todayRecord.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           check_out: timeString,
           work_hours: workHours,
-          status: workHours < 4.5 ? "half_day" : todayRecord.status, // Less than 4.5 hours is half day
+          status: workHours < halfDayThreshold ? "half_day" : todayRecord.status,
         }),
       })
 
@@ -104,7 +94,6 @@ export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAtten
 
   return (
     <div className="space-y-6">
-      {/* Check In/Out Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -115,11 +104,11 @@ export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAtten
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Timer Display or Prompt */}
             {todayRecord?.check_in ? (
               <WorkTimer 
-                checkInTime={`${todayRecord.date.split('T')[0]}T${todayRecord.check_in}`} 
-                checkOutTime={todayRecord.check_out ? `${todayRecord.date.split('T')[0]}T${todayRecord.check_out}` : undefined}
+                checkInTime={todayRecord.check_in}
+                checkOutTime={todayRecord.check_out ?? undefined}
+                shiftHours={shiftHours}
               />
             ) : (
               <div className="rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/20 p-6 text-center">
@@ -131,7 +120,6 @@ export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAtten
               </div>
             )}
 
-            {/* Check In/Out Controls */}
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="flex-1 grid grid-cols-2 gap-4 w-full">
                 <div className="p-4 rounded-lg bg-muted/50 text-center">
@@ -166,48 +154,6 @@ export function EmployeeAttendanceView({ attendance, employeeId }: EmployeeAtten
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Attendance History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Attendance History</CardTitle>
-          <CardDescription>This month</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Work Hours</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attendance.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No attendance records this month.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                attendance.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{formatDate(record.date)}</TableCell>
-                    <TableCell>{record.check_in ? formatTime(record.check_in) : "-"}</TableCell>
-                    <TableCell>{record.check_out ? formatTime(record.check_out) : "-"}</TableCell>
-                    <TableCell>{record.work_hours ? `${record.work_hours.toFixed(1)}h` : "-"}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(record.status)}>{record.status.replace("_", " ")}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
     </div>

@@ -6,22 +6,22 @@ export default async function AttendancePage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const attendanceData = await prisma.attendance.findMany({
+  const attendanceData = await prisma.attendances.findMany({
     where: {
       date: today
     },
     include: {
-      employee: {
+      employees: {
         select: {
           employee_id: true,
           designation: true,
-          user: {
+          users: {
             select: {
               full_name: true,
               avatar_url: true
             }
           },
-          department: {
+          departments_employees_department_idTodepartments: {
             select: {
               name: true
             }
@@ -34,16 +34,16 @@ export default async function AttendancePage() {
     }
   })
 
-  const employeesData = await prisma.employee.findMany({
+  const employeesData = await prisma.employees.findMany({
     where: {
-      user: {
+      users: {
         status: 'active'
       }
     },
     select: {
       id: true,
       employee_id: true,
-      user: {
+      users: {
         select: {
           full_name: true,
           status: true
@@ -52,7 +52,6 @@ export default async function AttendancePage() {
     }
   })
 
-  // Transform to match component's expected structure
   const attendance = attendanceData.map((att: any) => ({
     ...att,
     date: att.date.toISOString(),
@@ -63,19 +62,19 @@ export default async function AttendancePage() {
     created_at: att.created_at.toISOString(),
     updated_at: att.updated_at.toISOString(),
     employees: {
-      employee_id: att.employee.employee_id,
-      designation: att.employee.designation,
+      employee_id: att.employees.employee_id,
+      designation: att.employees.designation,
       users: {
-        full_name: att.employee.user.full_name,
-        avatar_url: att.employee.user.avatar_url ?? undefined
+        full_name: att.employees.users.full_name,
+        avatar_url: att.employees.users.avatar_url ?? undefined
       },
-      departments: att.employee.department
+      departments: att.employees.departments_employees_department_idTodepartments
     }
   }))
 
   const employees = employeesData.map((emp: any) => ({
     ...emp,
-    users: emp.user
+    users: emp.users
   }))
 
   return (

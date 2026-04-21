@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -115,9 +114,9 @@ export default function LoginPage() {
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Don&apos;t have an account?{" "}
-              <Link href="/auth/sign-up" className="text-primary hover:underline">
+              <a href="mailto:hr@revolixtechnology.com" className="text-primary hover:underline">
                 Contact HR
-              </Link>
+              </a>
             </p>
           </CardFooter>
         </form>

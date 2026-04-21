@@ -1,8 +1,6 @@
 import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
 import { EmployeeLeavesList } from "@/components/leaves/employee-leaves-list"
 import { redirect } from "next/navigation"
 
@@ -13,19 +11,19 @@ export default async function EmployeeLeavesPage() {
     redirect("/auth/login")
   }
 
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.employees.findUnique({
     where: { user_id: user.id },
     select: { id: true }
   })
 
   if (!employee) return null
 
-  const leaves = await prisma.leave.findMany({
+  const leaves = await prisma.leaves.findMany({
     where: {
       employee_id: employee.id
     },
     include: {
-      approver: {
+      users: {
         select: {
           full_name: true
         }
@@ -45,7 +43,7 @@ export default async function EmployeeLeavesPage() {
     approved_at: leave.approved_at?.toISOString() ?? undefined,
     approved_by: leave.approved_by ?? undefined,
     rejection_reason: leave.rejection_reason ?? undefined,
-    approver: leave.approver ?? undefined
+    approver: leave.users ?? undefined
   }))
 
   return (
@@ -53,12 +51,6 @@ export default async function EmployeeLeavesPage() {
       <PageHeader
         title="My Leaves"
         description="View and manage your leave requests"
-        actions={
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Apply for Leave
-          </Button>
-        }
       />
 
       <EmployeeLeavesList leaves={formattedLeaves} employeeId={employee.id} />

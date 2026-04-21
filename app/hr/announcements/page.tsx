@@ -1,47 +1,51 @@
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { AnnouncementsList } from "@/components/announcements/announcements-list"
+import { DepartmentList } from "@/components/departments/department-list"
 
-export default async function HRAnnouncementsPage() {
-  const announcementsData = await prisma.announcement.findMany({
+export default async function HRDepartmentsPage() {
+  const departmentsData = await prisma.departments.findMany({
     include: {
-      author: {
+      employees_departments_head_idToemployees: {
         select: {
-          full_name: true
+          id: true,
+          users: {
+            select: {
+              full_name: true
+            }
+          }
+        }
+      },
+      _count: {
+        select: {
+          employees_employees_department_idTodepartments: true
         }
       }
     },
     orderBy: {
-      created_at: 'desc'
+      name: 'asc'
     }
   })
 
-  // Transform to match component's expected structure
-  const announcements = announcementsData.map((announcement: any) => ({
-    ...announcement,
-    created_at: announcement.created_at.toISOString(),
-    updated_at: announcement.updated_at.toISOString(),
-    published_at: announcement.published_at?.toISOString() ?? undefined,
-    expires_at: announcement.expires_at?.toISOString() ?? undefined,
-    author: announcement.author
+  const departments = departmentsData.map((dept: any) => ({
+    ...dept,
+    description: dept.description ?? undefined,
+    head_id: dept.head_id ?? undefined,
+    created_at: dept.created_at.toISOString(),
+    updated_at: dept.updated_at.toISOString(),
+    head: dept.employees_departments_head_idToemployees ? {
+      id: dept.employees_departments_head_idToemployees.id,
+      users: dept.employees_departments_head_idToemployees.users
+    } : undefined,
+    employeeCount: dept._count.employees_employees_department_idTodepartments
   }))
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Announcements"
-        description="Manage company-wide announcements"
-        actions={
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Announcement
-          </Button>
-        }
+        title="Departments"
+        description="Manage organizational departments"
       />
-
-      <AnnouncementsList announcements={announcements} isAdmin={true} />
+      <DepartmentList departments={departments} />
     </div>
   )
 }

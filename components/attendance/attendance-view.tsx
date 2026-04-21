@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Calendar, Clock, UserCheck, UserX, Users } from "lucide-react"
+import { Calendar, Clock, Download, Loader2, UserCheck, UserX, Users } from "lucide-react"
 import { formatTime, getInitials, getStatusColor } from "@/lib/utils/helpers"
 
 interface AttendanceRecord {
@@ -34,6 +34,7 @@ interface AttendanceViewProps {
 
 export function AttendanceView({ attendance, employees, date }: AttendanceViewProps) {
   const [selectedDate, setSelectedDate] = useState(date)
+  const [exporting, setExporting] = useState(false)
 
   const stats = {
     total: employees.length,
@@ -41,6 +42,38 @@ export function AttendanceView({ attendance, employees, date }: AttendanceViewPr
     absent: attendance.filter((a) => a.status === "absent").length,
     late: attendance.filter((a) => a.status === "late").length,
     onLeave: attendance.filter((a) => a.status === "on_leave").length,
+  }
+
+  const handleExportReport = async () => {
+    setExporting(true)
+    try {
+      const csvRows = [
+        ['Employee Name', 'Employee ID', 'Department', 'Designation', 'Check In', 'Check Out', 'Work Hours', 'Status'],
+        ...attendance.map(r => [
+          r.employees.users.full_name,
+          r.employees.employee_id,
+          r.employees.departments.name,
+          r.employees.designation,
+          r.check_in ? formatTime(r.check_in) : '-',
+          r.check_out ? formatTime(r.check_out) : '-',
+          r.work_hours ? `${r.work_hours.toFixed(1)}h` : '-',
+          r.status.replace('_', ' ')
+        ])
+      ]
+
+      const csv = csvRows.map(row => row.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `attendance-${selectedDate}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      alert('Export failed!')
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -97,7 +130,10 @@ export function AttendanceView({ attendance, employees, date }: AttendanceViewPr
       {/* Date Picker and Actions */}
       <div className="flex items-center justify-between">
         <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-48" />
-        <Button variant="outline">Export Report</Button>
+        <Button variant="outline" onClick={handleExportReport} disabled={exporting}>
+          {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          Export Report
+        </Button>
       </div>
 
       {/* Attendance Table */}

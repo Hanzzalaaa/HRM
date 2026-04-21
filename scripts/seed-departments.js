@@ -42,7 +42,7 @@ async function main() {
 
   for (const dept of departments) {
     // Check if department already exists
-    const existing = await prisma.department.findFirst({
+    const existing = await prisma.departments.findFirst({
       where: { name: dept.name }
     })
 

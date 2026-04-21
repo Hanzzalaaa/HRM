@@ -8,7 +8,7 @@ import { formatCurrency } from "@/lib/utils/helpers"
 export default async function FinancialsPage() {
   const currentYear = new Date().getFullYear()
 
-  const financials = await prisma.companyFinancials.findMany({
+  const financials = await prisma.company_financials.findMany({
     where: {
       year: currentYear
     },
@@ -38,7 +38,6 @@ export default async function FinancialsPage() {
     <div className="space-y-6">
       <PageHeader title="Company Financials" description="Track company revenue, expenses, and profitability" />
 
-      {/* Current Month Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Monthly Revenue"
@@ -67,7 +66,6 @@ export default async function FinancialsPage() {
         />
       </div>
 
-      {/* Yearly Summary */}
       <Card>
         <CardHeader>
           <CardTitle>Yearly Summary - {currentYear}</CardTitle>
@@ -106,7 +104,6 @@ export default async function FinancialsPage() {
         </CardContent>
       </Card>
 
-      {/* Expense Breakdown */}
       {currentMonth && (
         <Card>
           <CardHeader>
@@ -127,7 +124,6 @@ export default async function FinancialsPage() {
                   }}
                 />
               </div>
-
               <div className="flex items-center justify-between">
                 <span className="text-sm">Operational Expenses</span>
                 <span className="font-medium">{formatCurrency(currentMonth.operational_expenses || 0)}</span>
@@ -140,7 +136,6 @@ export default async function FinancialsPage() {
                   }}
                 />
               </div>
-
               <div className="flex items-center justify-between">
                 <span className="text-sm">Marketing Expenses</span>
                 <span className="font-medium">{formatCurrency(currentMonth.marketing_expenses || 0)}</span>
@@ -153,7 +148,6 @@ export default async function FinancialsPage() {
                   }}
                 />
               </div>
-
               <div className="flex items-center justify-between">
                 <span className="text-sm">Other Expenses</span>
                 <span className="font-medium">{formatCurrency(currentMonth.other_expenses || 0)}</span>
