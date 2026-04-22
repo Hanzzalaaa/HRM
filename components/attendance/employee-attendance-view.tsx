@@ -40,7 +40,7 @@ export function EmployeeAttendanceView({ attendance, employeeId, shiftHours = 9 
     try {
       const now = new Date()
       const timeString = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`
-      const isLate = now.getHours() >= 10
+      const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30) // ✅ Fixed
 
       await fetch('/api/attendance', {
         method: 'POST',
