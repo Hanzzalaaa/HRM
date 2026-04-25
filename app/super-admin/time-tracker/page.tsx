@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Calendar, TrendingUp, Users } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function TimeTrackerPage() {
   const now = new Date()
   const localDate = new Date(now.getTime() + (5 * 60 * 60 * 1000))

@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/ui/page-header"
 import { SettingsForm } from "@/components/settings/settings-form"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HRSettingsPage() {
   const user = await getCurrentUser()
 

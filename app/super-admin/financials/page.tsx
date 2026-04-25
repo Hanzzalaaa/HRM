@@ -5,6 +5,8 @@ import { StatCard } from "@/components/ui/stat-card"
 import { TrendingUp, TrendingDown, DollarSign, Wallet, PiggyBank, Receipt } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/helpers"
 
+export const dynamic = 'force-dynamic'
+
 export default async function FinancialsPage() {
   const currentYear = new Date().getFullYear()
 

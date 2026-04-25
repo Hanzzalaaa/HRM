@@ -5,6 +5,8 @@ import { Plus } from "lucide-react"
 import { AnnouncementsList } from "@/components/announcements/announcements-list"
 import Link from "next/link"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HRAnnouncementsPage() {
   const data = await prisma.announcements.findMany({
     include: {

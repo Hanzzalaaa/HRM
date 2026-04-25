@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
 import { LeavesList } from "@/components/leaves/leaves-list"
 
+export const dynamic = 'force-dynamic'
+
 export default async function LeavesPage() {
   const leavesData = await prisma.leaves.findMany({
     include: {

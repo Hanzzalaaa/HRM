@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
 import { AttendanceView } from "@/components/attendance/attendance-view"
 
+export const dynamic = 'force-dynamic'
+
 export default async function AttendancePage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

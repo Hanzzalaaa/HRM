@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/ui/page-header"
 import { EmployeeForm } from "@/components/employees/employee-form"
 import { notFound } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 interface EmployeeEditPageProps {
   params: Promise<{
     id: string

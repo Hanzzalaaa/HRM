@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 async function getEmployeeData(userId: string) {
   const employee = await prisma.employees.findUnique({
     where: { user_id: userId },

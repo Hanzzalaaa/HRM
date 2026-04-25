@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header"
 import { EmployeeAttendanceView } from "@/components/attendance/employee-attendance-view"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function TimeTrackerPage() {
   const user = await getCurrentUser()
 

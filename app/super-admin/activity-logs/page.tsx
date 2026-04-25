@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { formatDateTime, getInitials } from "@/lib/utils/helpers"
 
+export const dynamic = 'force-dynamic'
+
 export default async function ActivityLogsPage() {
   const logsData = await prisma.activity_logs.findMany({
     include: {

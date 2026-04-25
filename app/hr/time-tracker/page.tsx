@@ -5,6 +5,8 @@ import { redirect } from "next/navigation"
 import { HRTimeTrackerView } from "@/components/attendance/hr-time-tracker-view"
 import { EmployeeAttendanceView } from "@/components/attendance/employee-attendance-view"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HRTimeTrackerPage() {
   const user = await getCurrentUser()
 

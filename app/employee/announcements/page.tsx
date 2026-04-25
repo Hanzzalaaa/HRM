@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
 import { AnnouncementsList } from "@/components/announcements/announcements-list"
 
+export const dynamic = 'force-dynamic'
+
 export default async function EmployeeAnnouncementsPage() {
   const announcements = await prisma.announcements.findMany({
     where: {

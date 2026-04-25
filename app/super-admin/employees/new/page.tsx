@@ -2,6 +2,8 @@ import { PageHeader } from "@/components/ui/page-header"
 import { EmployeeForm } from "@/components/employees/employee-form"
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewEmployeePage() {
   const departments = await prisma.departments.findMany({
     select: {

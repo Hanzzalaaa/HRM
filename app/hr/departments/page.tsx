@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
 import { DepartmentList } from "@/components/departments/department-list"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HRDepartmentsPage() {
   const departmentsData = await prisma.departments.findMany({
     include: {

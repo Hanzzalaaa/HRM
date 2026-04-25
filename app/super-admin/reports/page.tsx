@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Download, FileText, Users, DollarSign, Calendar, TrendingUp, Loader2 } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 const reports = [
   {
     title: "Employee Report",

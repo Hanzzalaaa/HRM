@@ -9,6 +9,8 @@ import Link from "next/link"
 import { Pencil, ArrowLeft } from "lucide-react"
 import { formatCurrency, formatDate, getStatusColor, getRoleBadgeColor } from "@/lib/utils/helpers"
 
+export const dynamic = 'force-dynamic'
+
 interface EmployeeViewPageProps {
   params: Promise<{ id: string }>
 }

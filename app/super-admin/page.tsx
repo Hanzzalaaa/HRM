@@ -19,6 +19,8 @@ import {
   LogOut
 } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 async function getDashboardStats() {
   const now = new Date()
   const currentMonth = now.getMonth() + 1

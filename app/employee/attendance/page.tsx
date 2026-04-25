@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { formatDate, formatTime, getStatusColor } from "@/lib/utils/helpers"
 
+export const dynamic = 'force-dynamic'
+
 export default async function EmployeeAttendancePage() {
   const user = await getCurrentUser()
 

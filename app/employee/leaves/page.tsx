@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header"
 import { EmployeeLeavesList } from "@/components/leaves/employee-leaves-list"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function EmployeeLeavesPage() {
   const user = await getCurrentUser()
 

@@ -9,6 +9,8 @@ import { DollarSign, Download, TrendingUp, TrendingDown } from "lucide-react"
 import { formatCurrency, getStatusColor } from "@/lib/utils/helpers"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",

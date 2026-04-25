@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
 
+export const dynamic = 'force-dynamic'
+
 async function getHRDashboardData() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

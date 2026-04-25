@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
 import { PayrollList } from "@/components/payroll/payroll-list"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HRPayrollPage() {
   const currentMonth = new Date().getMonth() + 1
   const currentYear = new Date().getFullYear()

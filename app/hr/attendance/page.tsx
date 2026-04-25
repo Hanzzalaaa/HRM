@@ -6,6 +6,8 @@ import { EmployeeAttendanceView } from "@/components/attendance/employee-attenda
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
+export const dynamic = 'force-dynamic'
+
 export default async function HRAttendancePage() {
   const user = await getCurrentUser()
   
