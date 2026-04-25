@@ -1,51 +1,44 @@
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
-import { DepartmentList } from "@/components/departments/department-list"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { AnnouncementsList } from "@/components/announcements/announcements-list"
+import Link from "next/link"
 
-export default async function HRDepartmentsPage() {
-  const departmentsData = await prisma.departments.findMany({
+export default async function HRAnnouncementsPage() {
+  const data = await prisma.announcements.findMany({
     include: {
-      employees_departments_head_idToemployees: {
-        select: {
-          id: true,
-          users: {
-            select: {
-              full_name: true
-            }
-          }
-        }
+      users: {
+        select: { full_name: true },
       },
-      _count: {
-        select: {
-          employees_employees_department_idTodepartments: true
-        }
-      }
     },
-    orderBy: {
-      name: 'asc'
-    }
+    orderBy: { created_at: "desc" },
   })
 
-  const departments = departmentsData.map((dept: any) => ({
-    ...dept,
-    description: dept.description ?? undefined,
-    head_id: dept.head_id ?? undefined,
-    created_at: dept.created_at.toISOString(),
-    updated_at: dept.updated_at.toISOString(),
-    head: dept.employees_departments_head_idToemployees ? {
-      id: dept.employees_departments_head_idToemployees.id,
-      users: dept.employees_departments_head_idToemployees.users
-    } : undefined,
-    employeeCount: dept._count.employees_employees_department_idTodepartments
+  const announcements = data.map((item: any) => ({
+    ...item,
+    created_at: item.created_at?.toISOString(),
+    updated_at: item.updated_at?.toISOString(),
+    published_at: item.published_at?.toISOString() ?? null,
+    expires_at: item.expires_at?.toISOString() ?? null,
+    author: item.users,
   }))
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Departments"
-        description="Manage organizational departments"
+        title="Announcements"
+        description="Manage company-wide announcements"
+        actions={
+          <Link href="/hr/announcements/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Announcement
+            </Button>
+          </Link>
+        }
       />
-      <DepartmentList departments={departments} />
+      <AnnouncementsList announcements={announcements} isAdmin={true} />
     </div>
   )
 }

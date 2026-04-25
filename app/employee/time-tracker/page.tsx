@@ -16,7 +16,19 @@ export default async function TimeTrackerPage() {
     select: { id: true, employment_type: true }
   })
 
-  if (!employee) return null
+  if (!employee) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Time Tracker" description="Track your daily work hours" />
+        <div className="flex flex-col items-center justify-center h-[50vh] space-y-3 text-center">
+          <h2 className="text-xl font-semibold">Employee Profile Not Found</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Your account doesn&apos;t have an employee profile linked yet. Please contact HR.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const now = new Date()
   const localDate = new Date(now.getTime() + (5 * 60 * 60 * 1000))

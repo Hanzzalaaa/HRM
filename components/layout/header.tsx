@@ -29,9 +29,14 @@ export function Header({ user }: HeaderProps) {
 
   const handleLogout = async () => {
     setLoading(true)
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push("/auth/login")
-    router.refresh()
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Even if the API call fails, clear client state and redirect
+    } finally {
+      router.push("/auth/login")
+      router.refresh()
+    }
   }
 
   const roleLabels: Record<string, string> = {

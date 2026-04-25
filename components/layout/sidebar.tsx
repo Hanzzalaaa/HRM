@@ -129,7 +129,7 @@ export function Sidebar({ role, basePath }: SidebarProps) {
     <aside
       className={cn("relative flex flex-col border-r bg-card transition-all duration-300", collapsed ? "w-16" : "w-64")}
     >
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-18 items-center justify-between border-b p-4">
         {!collapsed && (
           <Link href={basePath} className="flex items-center gap-2">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">

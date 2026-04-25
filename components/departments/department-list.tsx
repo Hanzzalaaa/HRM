@@ -66,17 +66,24 @@ export function DepartmentList({ departments }: DepartmentListProps) {
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}" department?`)) return
+    if (!confirm(`Are you sure you want to delete "${name}" department?\nThis cannot be undone.`)) return
+
+    setLoading(true)
+    setError("")
     try {
       const res = await fetch(`/api/departments/${id}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
         router.refresh()
       } else {
-        alert(data.error || 'Failed to delete department')
+        setError(data.error || 'Failed to delete department')
+        setOpen(true) // re-open dialog to show error
       }
     } catch {
-      alert('Something went wrong!')
+      setError('Something went wrong. Please try again.')
+      setOpen(true)
+    } finally {
+      setLoading(false)
     }
   }
 

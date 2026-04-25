@@ -53,17 +53,18 @@ export function EmployeeList({ employees, departments, basePath }: EmployeeListP
   const pageSize = 10
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete ${name}?`)) return
+    if (!confirm(`Are you sure you want to delete ${name}?\nThis will permanently remove their account and all associated data.`)) return
     setDeletingId(id)
     try {
       const res = await fetch(`/api/employees/${id}`, { method: "DELETE" })
-      if (res.ok) {
+      const data = await res.json()
+      if (data.success) {
         router.refresh()
       } else {
-        alert("Failed to delete employee")
+        alert(data.error || "Failed to delete employee")
       }
-    } catch (error) {
-      alert("Something went wrong")
+    } catch {
+      alert("Something went wrong. Please try again.")
     } finally {
       setDeletingId(null)
     }

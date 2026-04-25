@@ -1,39 +1,49 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getCurrentUser } from "@/lib/auth"
 
 export async function GET() {
   try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (!['super_admin', 'hr'].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const attendance = await prisma.attendances.findMany({
       include: {
         employees: {
-          include: { users: { select: { full_name: true } } }
-        }
+          include: { users: { select: { full_name: true } } },
+        },
       },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     })
 
     const rows = [
       ["Employee ID", "Full Name", "Date", "Check In", "Check Out", "Status", "Work Hours"],
       ...attendance.map(a => [
         a.employees.employee_id,
-        a.employees.users.full_name,
+        `"${a.employees.users.full_name}"`,
         new Date(a.date).toLocaleDateString(),
         a.check_in ? new Date(a.check_in).toLocaleTimeString() : "-",
         a.check_out ? new Date(a.check_out).toLocaleTimeString() : "-",
         a.status,
-        a.work_hours ?? "-"
-      ])
+        a.work_hours ?? "-",
+      ]),
     ]
 
     const csv = rows.map(r => r.join(",")).join("\n")
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": "attachment; filename=attendance.csv"
-      }
+        "Content-Disposition": "attachment; filename=attendance.csv",
+      },
     })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to export attendance" }, { status: 500 })
   }
 }

@@ -2,9 +2,19 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { generateEmployeeId } from "@/lib/utils/employee-id-generator"
+import { getCurrentUser } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (!['super_admin', 'hr'].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       full_name,
@@ -27,9 +37,14 @@ export async function POST(request: Request) {
       basic_salary,
     } = body
 
-    const existingUser = await prisma.users.findUnique({
-      where: { email }
-    })
+    if (!full_name || !email || !password || !department_id || !designation || !employment_type || !date_of_joining) {
+      return NextResponse.json(
+        { error: "full_name, email, password, department_id, designation, employment_type, and date_of_joining are required" },
+        { status: 400 }
+      )
+    }
+
+    const existingUser = await prisma.users.findUnique({ where: { email } })
 
     if (existingUser) {
       return NextResponse.json(
@@ -41,7 +56,7 @@ export async function POST(request: Request) {
     const finalEmployeeId = employee_id || await generateEmployeeId()
 
     const existingEmployee = await prisma.employees.findUnique({
-      where: { employee_id: finalEmployeeId }
+      where: { employee_id: finalEmployeeId },
     })
 
     if (existingEmployee) {
@@ -54,8 +69,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const result = await prisma.$transaction(async (tx: any) => {
-
-      const user = await tx.users.create({
+      const newUser = await tx.users.create({
         data: {
           id: crypto.randomUUID(),
           email,
@@ -63,14 +77,14 @@ export async function POST(request: Request) {
           full_name,
           role,
           status: "active",
-          updated_at: new Date()
-        }
+          updated_at: new Date(),
+        },
       })
 
       const employee = await tx.employees.create({
         data: {
           id: crypto.randomUUID(),
-          user_id: user.id,
+          user_id: newUser.id,
           employee_id: finalEmployeeId,
           department_id,
           designation,
@@ -85,19 +99,20 @@ export async function POST(request: Request) {
           pan_number: pan_number || null,
           aadhar_number: aadhar_number || null,
           basic_salary: basic_salary || 0,
-          updated_at: new Date()
-        }
+          updated_at: new Date(),
+        },
       })
 
-      return { user, employee }
+      // Strip password before returning
+      const { password: _pw, ...safeUser } = newUser
+      return { user: safeUser, employee }
     })
 
     return NextResponse.json({
       success: true,
       data: result,
-      employee_id: finalEmployeeId
+      employee_id: finalEmployeeId,
     })
-
   } catch (error) {
     console.error("Error creating employee:", error)
     return NextResponse.json(

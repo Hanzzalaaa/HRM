@@ -5,27 +5,38 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    // --- Input validation ---
+    const body = await request.json()
+    const { email, password } = body
 
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // --- DB connection ---
     try {
       await prisma.$connect()
     } catch (connectError) {
       console.error('Database connection error:', connectError)
       return NextResponse.json(
-        { error: 'Database connection failed. Please try again.' }, 
+        { error: 'Database connection failed. Please try again.' },
         { status: 503 }
       )
     }
 
+    // --- Lookup user ---
     const user = await prisma.users.findUnique({
       where: { email },
       include: {
         employees: {
           include: {
-            departments_employees_department_idTodepartments: true
-          }
-        }
-      }
+            departments_employees_department_idTodepartments: true,
+          },
+        },
+      },
     })
 
     if (!user) {
@@ -47,20 +58,23 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7
+      maxAge: 60 * 60 * 24 * 7,
     })
 
-    return NextResponse.json({ user })
+    // FIX: strip password hash before sending to client
+    const { password: _pw, ...safeUser } = user
+
+    return NextResponse.json({ user: safeUser })
   } catch (error: any) {
     console.error('Login error:', error)
-    
+
     if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
       return NextResponse.json(
-        { error: 'Database connection failed. Please check your internet connection and try again.' }, 
+        { error: 'Database connection failed. Please check your internet connection and try again.' },
         { status: 503 }
       )
     }
-    
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

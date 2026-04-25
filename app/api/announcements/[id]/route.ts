@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
+import { getCurrentUser } from "@/lib/auth"
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { id } = await context.params
 
     const announcement = await prisma.announcements.findUnique({
-      where: { id }
+      where: { id },
     })
 
     if (!announcement) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 })
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, data: announcement })
@@ -32,17 +37,24 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('user_id')?.value
-
-    if (!userId) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    await prisma.announcements.delete({
-      where: { id }
-    })
+    if (!['super_admin', 'hr'].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const { id } = await context.params
+
+    // Confirm it exists before deleting
+    const existing = await prisma.announcements.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
+    }
+
+    await prisma.announcements.delete({ where: { id } })
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -59,16 +71,39 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('user_id')?.value
-
-    if (!userId) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    if (!['super_admin', 'hr'].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const { id } = await context.params
     const body = await request.json()
     const { title, content, priority, expires_at } = body
+
+    if (!title || !content) {
+      return NextResponse.json(
+        { error: "Title and content are required" },
+        { status: 400 }
+      )
+    }
+
+    const validPriorities = ['low', 'medium', 'high', 'urgent']
+    if (priority && !validPriorities.includes(priority)) {
+      return NextResponse.json(
+        { error: `priority must be one of: ${validPriorities.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    // Confirm it exists before updating
+    const existing = await prisma.announcements.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
+    }
 
     const announcement = await prisma.announcements.update({
       where: { id },
@@ -77,8 +112,8 @@ export async function PATCH(
         content,
         priority,
         expires_at: expires_at ? new Date(expires_at) : null,
-        updated_at: new Date()
-      }
+        updated_at: new Date(),
+      },
     })
 
     return NextResponse.json({ success: true, data: announcement })

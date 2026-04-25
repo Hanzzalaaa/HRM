@@ -128,7 +128,19 @@ export default async function EmployeeDashboard() {
   }
 
   const employee = await getEmployeeData(user.id)
-  if (!employee) return null
+
+  if (!employee) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold">Employee Profile Not Found</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Your account doesn&apos;t have an employee profile linked yet. Please contact HR to set up your profile.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const [attendanceStats, leaveBalance, recentLeaves, latestSalary, announcements] = await Promise.all([
     getAttendanceStats(employee.id),

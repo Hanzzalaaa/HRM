@@ -223,7 +223,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
             <Bell className="h-5 w-5" />
             Notification Preferences
           </CardTitle>
-          <CardDescription>Manage how you receive notifications</CardDescription>
+          <CardDescription>
+            Manage how you receive in-app notifications
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
@@ -266,6 +268,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
               onCheckedChange={(v) => setNotifications((p) => ({ ...p, announcements: v }))}
             />
           </div>
+          <p className="text-xs text-muted-foreground pt-2 border-t">
+            Note: Email delivery is not yet configured. These preferences will apply when email notifications are enabled.
+          </p>
         </CardContent>
       </Card>
     </div>

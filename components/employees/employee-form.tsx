@@ -59,9 +59,11 @@ export function EmployeeForm({ employee, departments, basePath }: EmployeeFormPr
       const data = await res.json()
       if (data.success) {
         setFormData((prev) => ({ ...prev, employee_id: data.employee_id }))
+      } else {
+        setError("Could not generate employee ID. Please refresh and try again.")
       }
     } catch {
-      console.log("ID fetch failed")
+      setError("Could not generate employee ID. Please check your connection.")
     } finally {
       setLoadingEmployeeId(false)
     }
@@ -176,6 +178,8 @@ export function EmployeeForm({ employee, departments, basePath }: EmployeeFormPr
             <SelectContent>
               <SelectItem value="full_time">Full Time</SelectItem>
               <SelectItem value="part_time">Part Time</SelectItem>
+              <SelectItem value="contract">Contract</SelectItem>
+              <SelectItem value="intern">Intern</SelectItem>
             </SelectContent>
           </Select>
           <Input type="date" value={formData.date_of_joining} onChange={(e) => updateField("date_of_joining", e.target.value)} />

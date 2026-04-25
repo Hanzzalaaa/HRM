@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Loader2 } from "lucide-react"
 
-export default function NewAnnouncementPage() {
+export default function HRNewAnnouncementPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +42,7 @@ export default function NewAnnouncementPage() {
         return
       }
 
-      router.push("/super-admin/announcements")
+      router.push("/hr/announcements")
       router.refresh()
     } catch (err: any) {
       setError(err?.message || "Something went wrong")
@@ -98,12 +98,14 @@ export default function NewAnnouncementPage() {
                 <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              type="date"
-              placeholder="Expires At (optional)"
-              value={formData.expires_at}
-              onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
-            />
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Expiry Date (optional)</label>
+              <Input
+                type="date"
+                value={formData.expires_at}
+                onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
+              />
+            </div>
           </CardContent>
         </Card>
 

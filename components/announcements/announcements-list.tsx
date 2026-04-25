@@ -43,18 +43,24 @@ export function AnnouncementsList({ announcements, isAdmin = false }: Announceme
     setDeletingId(id)
     try {
       const res = await fetch(`/api/announcements/${id}`, { method: "DELETE" })
-      if (res.ok) {
+      const data = await res.json()
+      if (data.success) {
         router.refresh()
+      } else {
+        alert(data.error || "Failed to delete announcement")
       }
-    } catch (error) {
-      console.error("Delete failed:", error)
+    } catch {
+      alert("Something went wrong. Please try again.")
     } finally {
       setDeletingId(null)
     }
   }
 
   const handleEdit = (id: string) => {
-    router.push(`/super-admin/announcements/${id}/edit`)
+    // Use the basePath from the current URL to support both /super-admin and /hr
+    const path = window.location.pathname
+    const base = path.startsWith("/super-admin") ? "/super-admin" : "/hr"
+    router.push(`${base}/announcements/${id}/edit`)
   }
 
   return (
@@ -122,14 +128,21 @@ export function AnnouncementsList({ announcements, isAdmin = false }: Announceme
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{announcement.content}</p>
-                <div className="mt-4 flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Target:</span>
-                  {announcement.target_roles.map((role) => (
-                    <Badge key={role} variant="secondary" className="text-xs">
-                      {role.replace("_", " ")}
-                    </Badge>
-                  ))}
-                </div>
+                {announcement.target_roles && announcement.target_roles.length > 0 && (
+                  <div className="mt-4 flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">Visible to:</span>
+                    {announcement.target_roles.map((role) => (
+                      <Badge key={role} variant="secondary" className="text-xs capitalize">
+                        {role.replace("_", " ")}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {announcement.expires_at && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Expires: {formatDate(announcement.expires_at)}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )

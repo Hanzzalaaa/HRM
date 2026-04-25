@@ -27,24 +27,37 @@ interface Notification {
 export function NotificationsDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     fetchNotifications()
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000)
+    // Poll every 60 seconds — matches the Cache-Control max-age on the API
+    const interval = setInterval(fetchNotifications, 60000)
     return () => clearInterval(interval)
   }, [])
 
   const fetchNotifications = async () => {
     try {
       const response = await fetch('/api/notifications')
+
+      if (!response.ok) {
+        // 401 means session expired — don't show an error badge, just clear
+        setNotifications([])
+        setError(false)
+        return
+      }
+
       const data = await response.json()
       if (data.success) {
         setNotifications(data.data)
+        setError(false)
+      } else {
+        setError(true)
       }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+    } catch {
+      // Network failure — don't crash the header
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -61,18 +74,17 @@ export function NotificationsDropdown() {
     }
   }
 
-  const handleNotificationClick = (link: string) => {
-    router.push(link)
-  }
+  // Only show the badge when there are actual notifications to show
+  const badgeCount = notifications.length
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {notifications.length > 0 && (
+          {badgeCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-              {notifications.length > 9 ? '9+' : notifications.length}
+              {badgeCount > 9 ? '9+' : badgeCount}
             </span>
           )}
         </Button>
@@ -80,9 +92,14 @@ export function NotificationsDropdown() {
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
         <DropdownMenuSeparator />
+
         {loading ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
             Loading...
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            Could not load notifications
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
@@ -94,13 +111,13 @@ export function NotificationsDropdown() {
               <DropdownMenuItem
                 key={notification.id}
                 className="flex items-start gap-3 p-3 cursor-pointer"
-                onClick={() => handleNotificationClick(notification.link)}
+                onClick={() => router.push(notification.link)}
               >
-                <div className="mt-0.5">
+                <div className="mt-0.5 shrink-0">
                   {getPriorityIcon(notification.priority)}
                 </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">
+                <div className="flex-1 space-y-1 min-w-0">
+                  <p className="text-sm font-medium leading-none truncate">
                     {notification.title}
                   </p>
                   <p className="text-sm text-muted-foreground line-clamp-2">

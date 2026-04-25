@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!['super_admin', 'hr'].includes(user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { month, year } = await request.json()
 
     if (!month || !year) {
@@ -10,16 +20,15 @@ export async function POST(request: NextRequest) {
     }
 
     const employees = await prisma.employees.findMany({
-      include: { users: true }
+      include: { users: true },
     })
 
     const activeEmployees = employees.filter(emp => emp.users.status === 'active')
-
     const results = []
 
     for (const emp of activeEmployees) {
       const existing = await prisma.salaries.findFirst({
-        where: { employee_id: emp.id, month, year }
+        where: { employee_id: emp.id, month, year },
       })
 
       if (!existing) {
@@ -53,16 +62,16 @@ export async function POST(request: NextRequest) {
             gross_salary,
             net_salary,
             payment_status: 'pending',
-            updated_at: new Date()
-          }
+            updated_at: new Date(),
+          },
         })
         results.push(salary)
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `${results.length} payroll records generated!` 
+    return NextResponse.json({
+      success: true,
+      message: `${results.length} payroll records generated!`,
     })
   } catch (error) {
     console.error(error)
