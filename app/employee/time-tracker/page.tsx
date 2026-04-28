@@ -32,11 +32,11 @@ export default async function TimeTrackerPage() {
     )
   }
 
+  // Use UTC for date calculations — attendance dates are stored as UTC midnight
   const now = new Date()
-  const localDate = new Date(now.getTime() + (5 * 60 * 60 * 1000))
-  const currentMonth = localDate.getUTCMonth() + 1
-  const currentYear = localDate.getUTCFullYear()
-  const startDate = new Date(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)
+  const currentMonth = now.getUTCMonth() + 1
+  const currentYear = now.getUTCFullYear()
+  const startDate = new Date(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01T00:00:00.000Z`)
 
   const attendance = await prisma.attendances.findMany({
     where: {

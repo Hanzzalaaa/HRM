@@ -34,8 +34,10 @@ export function EmployeeAttendanceView({ attendance, employeeId, shiftHours = 9 
   const [error, setError] = useState<string | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
-  const today = new Date().toLocaleDateString("en-CA") // YYYY-MM-DD in local time
-  const todayRecord = attendance.find((a) => a.date.split("T")[0] === today)
+  // Use UTC date to match what the server stores (dates are stored as UTC midnight)
+  const todayUTC = new Date().toISOString().split("T")[0] // YYYY-MM-DD in UTC
+
+  const todayRecord = attendance.find((a) => a.date.split("T")[0] === todayUTC)
 
   // Tick every second while checked in but not yet checked out
   useEffect(() => {
@@ -76,7 +78,7 @@ export function EmployeeAttendanceView({ attendance, employeeId, shiftHours = 9 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           employee_id: employeeId,
-          date: today,
+          date: todayUTC,
           status: isLate ? "late" : "present",
         }),
       })
@@ -144,7 +146,7 @@ export function EmployeeAttendanceView({ attendance, employeeId, shiftHours = 9 
             <Clock className="h-5 w-5" />
             {"Today's Attendance"}
           </CardTitle>
-          <CardDescription>{formatDate(today)}</CardDescription>
+          <CardDescription>{formatDate(todayUTC)}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
 
