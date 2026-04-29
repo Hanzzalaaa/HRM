@@ -32,11 +32,10 @@ export default async function TimeTrackerPage() {
     )
   }
 
-  // Use UTC for date calculations — attendance dates are stored as UTC midnight
-  const now = new Date()
-  const currentMonth = now.getUTCMonth() + 1
-  const currentYear = now.getUTCFullYear()
-  const startDate = new Date(`${currentYear}-${String(currentMonth).padStart(2, "0")}-01T00:00:00.000Z`)
+  // Query last 35 days to cover the full current month regardless of timezone offset
+  const startDate = new Date()
+  startDate.setUTCDate(startDate.getUTCDate() - 35)
+  startDate.setUTCHours(0, 0, 0, 0)
 
   const attendance = await prisma.attendances.findMany({
     where: {
