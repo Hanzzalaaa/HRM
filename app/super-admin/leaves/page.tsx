@@ -1,0 +1,63 @@
+import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/ui/page-header"
+import { LeavesList } from "@/components/leaves/leaves-list"
+
+export const dynamic = 'force-dynamic'
+
+export default async function LeavesPage() {
+  const leavesData = await prisma.leaves.findMany({
+    include: {
+      employees: {
+        select: {
+          employee_id: true,
+          users: {
+            select: {
+              full_name: true,
+              avatar_url: true
+            }
+          },
+          departments_employees_department_idTodepartments: {
+            select: {
+              name: true
+            }
+          }
+        }
+      },
+      users: {
+        select: {
+          full_name: true
+        }
+      }
+    },
+    orderBy: {
+      created_at: 'desc'
+    }
+  })
+
+  const leaves = leavesData.map((leave: any) => ({
+    ...leave,
+    start_date: leave.start_date.toISOString(),
+    end_date: leave.end_date.toISOString(),
+    approved_at: leave.approved_at?.toISOString() ?? undefined,
+    created_at: leave.created_at.toISOString(),
+    updated_at: leave.updated_at.toISOString(),
+    rejection_reason: leave.rejection_reason ?? undefined,
+    employees: {
+      employee_id: leave.employees.employee_id,
+      users: {
+        full_name: leave.employees.users.full_name,
+        avatar_url: leave.employees.users.avatar_url ?? undefined
+      },
+      departments: leave.employees.departments_employees_department_idTodepartments
+    },
+    approver: leave.users ?? undefined
+  }))
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Leave Management" description="Review and manage leave requests" />
+
+      <LeavesList leaves={leaves} isAdmin={true} />
+    </div>
+  )
+}

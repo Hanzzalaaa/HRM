@@ -1,0 +1,108 @@
+import { getCurrentUser } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/ui/page-header"
+import { redirect } from "next/navigation"
+import { HRTimeTrackerView } from "@/components/attendance/hr-time-tracker-view"
+import { EmployeeAttendanceView } from "@/components/attendance/employee-attendance-view"
+
+export const dynamic = 'force-dynamic'
+
+export default async function HRTimeTrackerPage() {
+  const user = await getCurrentUser()
+
+  if (!user || !["super_admin", "hr"].includes(user.role)) {
+    redirect("/auth/login")
+  }
+
+  // ✅ PKT (UTC+5) mein aaj ki date
+  const now = new Date()
+  const pktNow = new Date(now.getTime() + (5 * 60 * 60 * 1000))
+  const pktToday = `${pktNow.getUTCFullYear()}-${String(pktNow.getUTCMonth() + 1).padStart(2, "0")}-${String(pktNow.getUTCDate()).padStart(2, "0")}`
+
+  // HR ka apna employee record
+  const hrEmployee = await prisma.employees.findUnique({
+    where: { user_id: user.id },
+    select: { id: true, employment_type: true }
+  })
+
+  // HR ki apni attendance
+  let hrAttendance: any[] = []
+  if (hrEmployee) {
+    const startDate = new Date(`${pktToday.slice(0, 7)}-01`)
+    const raw = await prisma.attendances.findMany({
+      where: {
+        employee_id: hrEmployee.id,
+        date: { gte: startDate }
+      },
+      orderBy: { date: "desc" }
+    })
+    hrAttendance = raw.map((r: any) => ({
+      ...r,
+      date: r.date.toISOString(),
+      check_in: r.check_in?.toISOString() ?? undefined,
+      check_out: r.check_out?.toISOString() ?? undefined,
+      work_hours: r.work_hours ?? undefined,
+      notes: r.notes ?? undefined,
+      created_at: r.created_at.toISOString(),
+      updated_at: r.updated_at.toISOString(),
+    }))
+  }
+
+  const shiftHours = hrEmployee?.employment_type === "part_time" ? 4 : 9
+
+  // ✅ Aaj ki date PKT mein — UTC midnight se next day midnight tak
+  const todayStart = new Date(`${pktToday}T00:00:00+05:00`)
+  const todayEnd = new Date(`${pktToday}T23:59:59+05:00`)
+
+  const todayAttendance = await prisma.attendances.findMany({
+    where: {
+      date: {
+        gte: todayStart,
+        lte: todayEnd
+      }
+    },
+    include: {
+      employees: {
+        select: {
+          id: true,
+          employment_type: true,
+          users: { select: { full_name: true } }
+        }
+      }
+    },
+    orderBy: { check_in: "asc" }
+  })
+
+  const formatted = todayAttendance.map((record: any) => ({
+    id: record.id,
+    employeeName: record.employees?.users?.full_name ?? "Unknown",
+    employmentType: record.employees?.employment_type ?? "full_time",
+    date: record.date.toISOString(),
+    check_in: record.check_in?.toISOString() ?? undefined,
+    check_out: record.check_out?.toISOString() ?? undefined,
+    status: record.status,
+    work_hours: record.work_hours ?? undefined,
+  }))
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Time Tracker" description="Track your hours and monitor team attendance" />
+
+      {hrEmployee && (
+        <div>
+          <h2 className="text-lg font-semibold mb-3">My Attendance</h2>
+          <EmployeeAttendanceView
+            attendance={hrAttendance}
+            employeeId={hrEmployee.id}
+            shiftHours={shiftHours}
+          />
+        </div>
+      )}
+
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Team Overview</h2>
+        <HRTimeTrackerView records={formatted} />
+      </div>
+    </div>
+  )
+}
